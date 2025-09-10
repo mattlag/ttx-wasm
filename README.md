@@ -24,6 +24,30 @@ disassembly, and more.
 npm install ttx-wasm
 ```
 
+### Using Pre-compiled Files
+
+For quick integration without a build process, you can use the pre-compiled files directly from the `dist/` folder:
+
+```html
+<!-- ES Module (recommended) -->
+<script type="module">
+  import TTX from './dist/ttx-wasm.esm.js';
+  // Your code here
+</script>
+
+<!-- CommonJS (Node.js) -->
+<script>
+  const TTX = require('./dist/ttx-wasm.cjs.js');
+</script>
+
+<!-- UMD (Universal) -->
+<script src="./dist/ttx-wasm.umd.js"></script>
+<script>
+  // Available as global TTX object
+  const ttx = TTX.default;
+</script>
+```
+
 ### Basic Usage
 
 ```javascript
