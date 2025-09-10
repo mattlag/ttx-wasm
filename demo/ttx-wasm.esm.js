@@ -14,19 +14,22 @@ class PyodideTTX {
     async initialize() {
         if (this.initialized)
             return;
-        console.log('Loading Pyodide...');
-        this.pyodide = await at({
-            indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.28.2/full/',
-        });
-        console.log('Installing FontTools...');
-        await this.pyodide.loadPackage(['micropip']);
-        await this.pyodide.runPythonAsync(`
-      import micropip
-      await micropip.install('fonttools')
-    `);
-        // Load our Python TTX reference implementation
-        console.log('Loading TTX implementation...');
-        await this.pyodide.runPython(`
+        try {
+            console.log('Loading Pyodide...');
+            this.pyodide = await at({
+                indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.28.2/full/',
+            });
+            console.log('Pyodide loaded successfully, version:', this.pyodide.version);
+            console.log('Available globals methods:', Object.keys(this.pyodide.globals));
+            console.log('Installing FontTools...');
+            await this.pyodide.loadPackage(['micropip']);
+            await this.pyodide.runPythonAsync(`
+        import micropip
+        await micropip.install('fonttools')
+      `);
+            // Load our Python TTX reference implementation
+            console.log('Loading TTX implementation...');
+            await this.pyodide.runPython(`
       import sys
       from fontTools.ttLib import TTFont
       from fontTools.misc.timeTools import timestampSinceEpoch
@@ -176,7 +179,9 @@ class PyodideTTX {
                   
                   # Save to binary format
                   output = io.BytesIO()
-                  font.save(output, flavor=flavor)
+                  if flavor:
+                      font.flavor = flavor
+                  font.save(output)
                   
                   font.close()
                   return output.getvalue()
@@ -202,28 +207,45 @@ class PyodideTTX {
       # Create global processor instance
       ttx_processor = PyodideTTXProcessor()
     `);
-        this.initialized = true;
-        console.log('Pyodide TTX initialized successfully!');
+            this.initialized = true;
+            console.log('Pyodide TTX initialized successfully!');
+        }
+        catch (error) {
+            console.error('Failed to initialize Pyodide TTX:', error);
+            throw error;
+        }
     }
     async detectFormat(fontData) {
         await this.initialize();
         if (!this.pyodide)
             throw new Error('Pyodide not initialized');
-        this.pyodide.globals.set('font_data', fontData);
-        return this.pyodide.runPython('ttx_processor.detect_format(font_data.to_py())');
+        try {
+            this.pyodide.globals.set('font_data', fontData);
+            return this.pyodide.runPython('ttx_processor.detect_format(font_data.to_py())');
+        }
+        catch (error) {
+            console.error('Error in detectFormat:', error);
+            throw new Error(`Font format detection failed: ${error}`);
+        }
     }
     async getFontInfo(fontData, fontNumber = 0) {
         await this.initialize();
         if (!this.pyodide)
             throw new Error('Pyodide not initialized');
-        this.pyodide.globals.set('font_data', fontData);
-        this.pyodide.globals.set('font_number', fontNumber);
-        const result = this.pyodide.runPython(`
-      import json
-      info = ttx_processor.get_font_info(font_data.to_py(), font_number)
-      json.dumps(info)
-    `);
-        return JSON.parse(result);
+        try {
+            this.pyodide.globals.set('font_data', fontData);
+            this.pyodide.globals.set('font_number', fontNumber);
+            const result = this.pyodide.runPython(`
+        import json
+        info = ttx_processor.get_font_info(font_data.to_py(), font_number)
+        json.dumps(info)
+      `);
+            return JSON.parse(result);
+        }
+        catch (error) {
+            console.error('Error in getFontInfo:', error);
+            throw new Error(`Font info extraction failed: ${error}`);
+        }
     }
     async dumpToTTX(fontData, options = {}) {
         await this.initialize();

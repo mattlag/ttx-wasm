@@ -203,7 +203,9 @@ export class PyodideTTX {
                   
                   # Save to binary format
                   output = io.BytesIO()
-                  font.save(output, flavor=flavor)
+                  if flavor:
+                      font.flavor = flavor
+                  font.save(output)
                   
                   font.close()
                   return output.getvalue()
