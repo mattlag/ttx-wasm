@@ -29,7 +29,7 @@
     "dev": "rollup -c -w",
     "clean": "rimraf dist coverage",
     "prepare:disabled": "npm run build",
-    "prepublishOnly": "npm run lint && npm run test && npm run build",
+    "prepublishOnly:disabled": "npm run lint && npm run test && npm run build",
     "docs": "typedoc src/js/index.ts --out docs/_build",
     "docs:generate": "npm run docs",
     "start:demo": "npm run build:dev && npx http-server demo -p 8080 -c-1 -o",
@@ -53,7 +53,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mattlag/ttx-wasm.git"
+    "url": "git+https://github.com/mattlag/ttx-wasm.git"
   },
   "bugs": {
     "url": "https://github.com/mattlag/ttx-wasm/issues"

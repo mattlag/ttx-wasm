@@ -20,12 +20,14 @@ disassembly, and more.
 
 ### Installation
 
-**Coming Soon to NPM:**
 ```bash
-npm install ttx-wasm  # Will be available once published
+npm install ttx-wasm
 ```
 
-**Current Installation:**
+**Alternative: Use Pre-compiled Files**
+
+For quick integration without npm, you can clone and use pre-compiled files:
+
 ```bash
 # Clone the repository
 git clone https://github.com/mattlag/ttx-wasm.git
