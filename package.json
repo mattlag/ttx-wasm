@@ -12,10 +12,7 @@
   ],
   "scripts": {
     "build": "npm run clean && npm run build:js",
-    "build:wasm": "cd build && powershell -ExecutionPolicy Bypass -File build.ps1",
-    "build:wasm:platform": "node -e \"process.platform === 'win32' ? require('child_process').execSync('build.bat', {stdio:'inherit'}) : require('child_process').execSync('make', {stdio:'inherit'})\"",
     "build:js": "rollup -c",
-    "build:full": "npm run clean && npm run build:wasm && npm run build:js",
     "build:dev": "npm run build:js",
     "test": "jest",
     "test:unit": "jest --testPathPattern=unit",
@@ -35,7 +32,7 @@
     "docs": "typedoc src/js/index.ts --out docs/_build",
     "docs:generate": "npm run docs",
     "start:demo": "npm run build:dev && node examples/node-example.js",
-    "start:browser": "npm run build:dev && python -m http.server 8080"
+    "start:browser": "npm run build:dev && npx http-server examples -p 8080"
   },
   "keywords": [
     "fonts",
