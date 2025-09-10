@@ -51,6 +51,11 @@ export function createMockWasmModule() {
     },
 
     HEAPU8: new Uint8Array(1024), // Mock memory heap
+
+    // Optional method for compatibility
+    lengthBytesUTF8: (str: string) => {
+      return new TextEncoder().encode(str).length;
+    },
   };
 }
 

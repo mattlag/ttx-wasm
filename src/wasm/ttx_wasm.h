@@ -128,6 +128,84 @@ private:
 };
 
 /**
+ * HEAD table implementation
+ */
+class HeadTable : public FontTable {
+public:
+    HeadTable() : FontTable("head") {}
+    
+    bool parse(const ByteArray& data) override;
+    ByteArray serialize() const override;
+    std::string toXML() const override;
+    bool fromXML(const std::string& xml) override;
+    
+    // HEAD table fields
+    uint32_t version = 0x00010000;
+    uint32_t fontRevision = 0;
+    uint32_t checkSumAdjustment = 0;
+    uint32_t magicNumber = 0x5F0F3CF5;
+    uint16_t flags = 0;
+    uint16_t unitsPerEm = 1000;
+    uint64_t created = 0;
+    uint64_t modified = 0;
+    int16_t xMin = 0, yMin = 0, xMax = 0, yMax = 0;
+    uint16_t macStyle = 0;
+    uint16_t lowestRecPPEM = 0;
+    int16_t fontDirectionHint = 2;
+    int16_t indexToLocFormat = 0;
+    int16_t glyphDataFormat = 0;
+};
+
+/**
+ * NAME table implementation
+ */
+class NameTable : public FontTable {
+public:
+    NameTable() : FontTable("name") {}
+    
+    bool parse(const ByteArray& data) override;
+    ByteArray serialize() const override;
+    std::string toXML() const override;
+    bool fromXML(const std::string& xml) override;
+    
+    struct NameRecord {
+        uint16_t platformID;
+        uint16_t encodingID;
+        uint16_t languageID;
+        uint16_t nameID;
+        std::string string;
+    };
+    
+    std::vector<NameRecord> nameRecords;
+};
+
+/**
+ * CMAP table implementation
+ */
+class CmapTable : public FontTable {
+public:
+    CmapTable() : FontTable("cmap") {}
+    
+    bool parse(const ByteArray& data) override;
+    ByteArray serialize() const override;
+    std::string toXML() const override;
+    bool fromXML(const std::string& xml) override;
+    
+    struct EncodingRecord {
+        uint16_t platformID;
+        uint16_t encodingID;
+        uint32_t offset;
+    };
+    
+    uint16_t version = 0;
+    std::vector<EncodingRecord> encodingRecords;
+    std::map<uint32_t, uint16_t> glyphMapping; // Simplified mapping
+    
+private:
+    bool parseSubtable(const ByteArray& data, uint32_t offset);
+};
+
+/**
  * Font reader class for parsing binary font files
  */
 class FontReader {

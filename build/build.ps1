@@ -24,7 +24,7 @@ if (-not (Test-Path "..\dist")) {
 $SRCDIR = "..\src\wasm"
 $SOURCES = "$SRCDIR\ttx_wasm.cpp"
 $OUTPUT_DIR = "..\dist"
-$WASM_OUTPUT = "$OUTPUT_DIR\ttx-wasm.js"
+$WASM_OUTPUT = "$OUTPUT_DIR\ttx-wasm-core.js"
 
 Write-Host "Compiling with Emscripten..." -ForegroundColor Cyan
 
