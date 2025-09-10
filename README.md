@@ -20,13 +20,25 @@ disassembly, and more.
 
 ### Installation
 
+**Coming Soon to NPM:**
 ```bash
-npm install ttx-wasm
+npm install ttx-wasm  # Will be available once published
+```
+
+**Current Installation:**
+```bash
+# Clone the repository
+git clone https://github.com/mattlag/ttx-wasm.git
+cd ttx-wasm
+
+# Use pre-compiled files directly (no build needed)
+# Files available in dist/ folder
 ```
 
 ### Using Pre-compiled Files
 
-For quick integration without a build process, you can use the pre-compiled files directly from the `dist/` folder:
+For quick integration without a build process, you can use the pre-compiled
+files directly from the `dist/` folder:
 
 ```html
 <!-- ES Module (recommended) -->

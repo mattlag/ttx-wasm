@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "type": "module",
   "description": "A WebAssembly port of FontTools TTX for JavaScript environments",
-  "main": "dist/ttx-wasm.js",
+  "main": "dist/ttx-wasm.cjs.js",
+  "module": "dist/ttx-wasm.esm.js",
   "types": "dist/ttx-wasm.d.ts",
   "files": [
     "dist/**/*",
