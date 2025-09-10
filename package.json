@@ -1,0 +1,89 @@
+{
+  "name": "ttx-wasm",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A WebAssembly port of FontTools TTX for JavaScript environments",
+  "main": "dist/ttx-wasm.js",
+  "types": "dist/ttx-wasm.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "npm run clean && npm run build:js",
+    "build:wasm": "cd build && powershell -ExecutionPolicy Bypass -File build.ps1",
+    "build:wasm:platform": "node -e \"process.platform === 'win32' ? require('child_process').execSync('build.bat', {stdio:'inherit'}) : require('child_process').execSync('make', {stdio:'inherit'})\"",
+    "build:js": "rollup -c",
+    "build:full": "npm run clean && npm run build:wasm && npm run build:js",
+    "build:dev": "npm run build:js",
+    "test": "jest",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration",
+    "test:browser": "jest --testPathPattern=browser",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/**/*.{ts,js} --fix",
+    "lint:check": "eslint src/**/*.{ts,js}",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write src/**/*.{ts,js,json}",
+    "format:check": "prettier --check src/**/*.{ts,js,json}",
+    "dev": "rollup -c -w",
+    "clean": "rimraf dist coverage",
+    "prepare:disabled": "npm run build",
+    "prepublishOnly": "npm run lint && npm run test && npm run build",
+    "docs": "typedoc src/js/index.ts --out docs/_build",
+    "docs:generate": "npm run docs",
+    "start:demo": "npm run build:dev && node examples/node-example.js",
+    "start:browser": "npm run build:dev && python -m http.server 8080"
+  },
+  "keywords": [
+    "fonts",
+    "typography",
+    "webassembly",
+    "wasm",
+    "ttx",
+    "fonttools",
+    "opentype",
+    "truetype",
+    "otf",
+    "ttf",
+    "font-conversion",
+    "xml"
+  ],
+  "author": "Matt LaGrandeur <matt@lagrandeur.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mattlag/ttx-wasm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mattlag/ttx-wasm/issues"
+  },
+  "homepage": "https://github.com/mattlag/ttx-wasm#readme",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.5",
+    "@types/jest": "^29.5.8",
+    "@types/node": "^20.9.0",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0",
+    "eslint": "^8.54.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "prettier": "^3.1.0",
+    "rimraf": "^5.0.5",
+    "rollup": "^4.5.0",
+    "ts-jest": "^29.1.1",
+    "tslib": "^2.8.1",
+    "typedoc": "^0.25.4",
+    "typescript": "^5.2.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "iconv-lite": "^0.6.3"
+  }
+}

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTX-WASM Example</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .panel {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+        .file-input {
+            margin: 10px 0;
+            padding: 10px;
+            border: 2px dashed #ddd;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .file-input:hover {
+            border-color: #007acc;
+        }
+        .file-input.dragover {
+            border-color: #007acc;
+            background-color: #f0f8ff;
+        }
+        .output {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #005a9e;
+        }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .info {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            color: #d32f2f;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.loading {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        .status.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        .status.error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <h1>TTX-WASM Demo</h1>
+    <p>Convert fonts to TTX XML format and back using WebAssembly</p>
+    
+    <div id="status" class="status loading">Loading TTX-WASM module...</div>
+    
+    <div class="container">
+        <div class="panel">
+            <h2>Font → TTX</h2>
+            <p>Convert binary font files to TTX XML format</p>
+            
+            <div class="file-input" id="fontDropZone">
+                <p>Drop a font file here or click to select</p>
+                <input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2,.ttc" style="display: none;">
+            </div>
+            
+            <div>
+                <h3>Options:</h3>
+                <label>
+                    <input type="checkbox" id="splitTables"> Split tables
+                </label><br>
+                <label>
+                    <input type="checkbox" id="splitGlyphs"> Split glyphs
+                </label><br>
+                <label>
+                    <input type="checkbox" id="disassembleInstructions" checked> Disassemble instructions
+                </label><br>
+                <label>
+                    Only tables: <input type="text" id="onlyTables" placeholder="head,name,cmap" style="width: 150px;">
+                </label><br>
+                <label>
+                    Skip tables: <input type="text" id="skipTables" placeholder="glyf,loca" style="width: 150px;">
+                </label>
+            </div>
+            
+            <button class="button" id="convertToTTX" disabled>Convert to TTX</button>
+            <button class="button" id="downloadTTX" disabled>Download TTX</button>
+            
+            <div id="fontInfo" class="info" style="display: none;"></div>
+            <div id="ttxOutput" class="output" style="display: none;"></div>
+        </div>
+        
+        <div class="panel">
+            <h2>TTX → Font</h2>
+            <p>Compile TTX XML files back to binary font format</p>
+            
+            <div class="file-input" id="ttxDropZone">
+                <p>Drop a TTX file here or click to select</p>
+                <input type="file" id="ttxFile" accept=".ttx,.xml" style="display: none;">
+            </div>
+            
+            <div>
+                <h3>Options:</h3>
+                <label>
+                    Output flavor: 
+                    <select id="outputFlavor">
+                        <option value="">Auto (TTF/OTF)</option>
+                        <option value="woff">WOFF</option>
+                        <option value="woff2">WOFF2</option>
+                    </select>
+                </label><br>
+                <label>
+                    <input type="checkbox" id="recalcBBoxes" checked> Recalculate bounding boxes
+                </label>
+            </div>
+            
+            <button class="button" id="convertToFont" disabled>Convert to Font</button>
+            <button class="button" id="downloadFont" disabled>Download Font</button>
+            
+            <div id="compilationInfo" class="info" style="display: none;"></div>
+            <div id="fontOutput" class="output" style="display: none;"></div>
+        </div>
+    </div>
+    
+    <div class="panel">
+        <h2>Console Output</h2>
+        <div id="console" class="output"></div>
+        <button class="button" id="clearConsole">Clear Console</button>
+    </div>
+
+    <script type="module">
+        // This is a placeholder for the actual TTX-WASM module
+        // In production, this would import the compiled WASM module
+        
+        class MockTTX {
+            async init() {
+                console.log('TTX-WASM module initialized (mock)');
+            }
+            
+            async detectFormat(data) {
+                if (data.length < 4) throw new Error('File too small');
+                const signature = new Uint32Array(data.buffer.slice(0, 4))[0];
+                if (signature === 0x00010000) return 'TTF';
+                if (signature === 0x4F54544F) return 'OTF';
+                return 'UNKNOWN';
+            }
+            
+            async getFontInfo(data) {
+                const format = await this.detectFormat(data);
+                return {
+                    format,
+                    tables: ['head', 'hhea', 'maxp', 'OS/2', 'name', 'cmap', 'post', 'hmtx'],
+                    metadata: {
+                        family: 'Example Font',
+                        style: 'Regular',
+                        unitsPerEm: 1000
+                    }
+                };
+            }
+            
+            async dump(data, options = {}) {
+                const format = await this.detectFormat(data);
+                const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<ttFont sfntVersion="\\x00\\x01\\x00\\x00" ttLibVersion="4.0">
+  <!-- This is a mock TTX output -->
+  <GlyphOrder>
+    <GlyphID id="0" name=".notdef"/>
+  </GlyphOrder>
+  
+  <head>
+    <tableVersion value="1.0"/>
+    <fontRevision value="1.0"/>
+    <checkSumAdjustment value="0x12345678"/>
+    <magicNumber value="0x5f0f3cf5"/>
+  </head>
+</ttFont>`;
+                return { data: xml, format: 'TTX', warnings: ['Mock implementation'] };
+            }
+            
+            async compile(data, options = {}) {
+                const binaryData = new Uint8Array([0x00, 0x01, 0x00, 0x00, 0x00, 0x0A]);
+                return { data: binaryData, format: options.flavor || 'TTF' };
+            }
+            
+            async listTables(data) {
+                return ['head', 'hhea', 'maxp', 'OS/2', 'name', 'cmap', 'post', 'hmtx'];
+            }
+        }
+        
+        let ttx;
+        let currentFontData = null;
+        let currentTTXData = null;
+        let currentCompiledFont = null;
+        
+        // Initialize TTX
+        async function initTTX() {
+            try {
+                ttx = new MockTTX();
+                await ttx.init();
+                updateStatus('TTX-WASM module loaded successfully', 'success');
+                enableUI();
+            } catch (error) {
+                updateStatus(`Failed to load TTX-WASM: ${error.message}`, 'error');
+                logToConsole(`Error: ${error.message}`);
+            }
+        }
+        
+        function updateStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        function enableUI() {
+            // UI is enabled based on file loading
+        }
+        
+        function logToConsole(message) {
+            const console = document.getElementById('console');
+            const timestamp = new Date().toLocaleTimeString();
+            console.textContent += `[${timestamp}] ${message}\n`;
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        // File handling
+        function setupFileHandling() {
+            setupDropZone('fontDropZone', 'fontFile', handleFontFile);
+            setupDropZone('ttxDropZone', 'ttxFile', handleTTXFile);
+        }
+        
+        function setupDropZone(dropZoneId, fileInputId, handler) {
+            const dropZone = document.getElementById(dropZoneId);
+            const fileInput = document.getElementById(fileInputId);
+            
+            dropZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handler(e.target.files[0]);
+                }
+            });
+            
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    handler(e.dataTransfer.files[0]);
+                }
+            });
+        }
+        
+        async function handleFontFile(file) {
+            try {
+                logToConsole(`Loading font file: ${file.name} (${file.size} bytes)`);
+                const arrayBuffer = await file.arrayBuffer();
+                currentFontData = new Uint8Array(arrayBuffer);
+                
+                // Get font info
+                const info = await ttx.getFontInfo(currentFontData);
+                displayFontInfo(info);
+                
+                document.getElementById('convertToTTX').disabled = false;
+                logToConsole(`Font loaded successfully. Format: ${info.format}`);
+            } catch (error) {
+                logToConsole(`Error loading font: ${error.message}`);
+                displayError('fontInfo', error.message);
+            }
+        }
+        
+        async function handleTTXFile(file) {
+            try {
+                logToConsole(`Loading TTX file: ${file.name} (${file.size} bytes)`);
+                currentTTXData = await file.text();
+                
+                document.getElementById('convertToFont').disabled = false;
+                displayCompilationInfo(`TTX file loaded: ${file.name}`);
+                logToConsole('TTX file loaded successfully');
+            } catch (error) {
+                logToConsole(`Error loading TTX: ${error.message}`);
+                displayError('compilationInfo', error.message);
+            }
+        }
+        
+        function displayFontInfo(info) {
+            const fontInfo = document.getElementById('fontInfo');
+            fontInfo.style.display = 'block';
+            fontInfo.innerHTML = `
+                <h3>Font Information</h3>
+                <p><strong>Format:</strong> ${info.format}</p>
+                <p><strong>Tables:</strong> ${info.tables.join(', ')}</p>
+                <p><strong>Family:</strong> ${info.metadata.family || 'Unknown'}</p>
+                <p><strong>Style:</strong> ${info.metadata.style || 'Unknown'}</p>
+                <p><strong>Units per Em:</strong> ${info.metadata.unitsPerEm || 'Unknown'}</p>
+            `;
+        }
+        
+        function displayCompilationInfo(message) {
+            const info = document.getElementById('compilationInfo');
+            info.style.display = 'block';
+            info.innerHTML = `<p>${message}</p>`;
+        }
+        
+        function displayError(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = 'error';
+            element.innerHTML = `<p><strong>Error:</strong> ${message}</p>`;
+        }
+        
+        // Conversion functions
+        async function convertToTTX() {
+            if (!currentFontData) return;
+            
+            try {
+                logToConsole('Converting font to TTX...');
+                
+                const options = {
+                    splitTables: document.getElementById('splitTables').checked,
+                    splitGlyphs: document.getElementById('splitGlyphs').checked,
+                    disassembleInstructions: document.getElementById('disassembleInstructions').checked
+                };
+                
+                const onlyTables = document.getElementById('onlyTables').value.trim();
+                if (onlyTables) {
+                    options.onlyTables = onlyTables.split(',').map(t => t.trim());
+                }
+                
+                const skipTables = document.getElementById('skipTables').value.trim();
+                if (skipTables) {
+                    options.skipTables = skipTables.split(',').map(t => t.trim());
+                }
+                
+                const result = await ttx.dump(currentFontData, options);
+                
+                const output = document.getElementById('ttxOutput');
+                output.style.display = 'block';
+                output.textContent = result.data;
+                
+                document.getElementById('downloadTTX').disabled = false;
+                
+                if (result.warnings && result.warnings.length > 0) {
+                    logToConsole(`Warnings: ${result.warnings.join(', ')}`);
+                }
+                
+                logToConsole('Font converted to TTX successfully');
+            } catch (error) {
+                logToConsole(`Error converting to TTX: ${error.message}`);
+                displayError('ttxOutput', error.message);
+            }
+        }
+        
+        async function convertToFont() {
+            if (!currentTTXData) return;
+            
+            try {
+                logToConsole('Compiling TTX to font...');
+                
+                const options = {
+                    flavor: document.getElementById('outputFlavor').value,
+                    recalcBBoxes: document.getElementById('recalcBBoxes').checked
+                };
+                
+                const result = await ttx.compile(currentTTXData, options);
+                currentCompiledFont = result.data;
+                
+                const output = document.getElementById('fontOutput');
+                output.style.display = 'block';
+                output.textContent = `Font compiled successfully!\nFormat: ${result.format}\nSize: ${result.data.length} bytes`;
+                
+                document.getElementById('downloadFont').disabled = false;
+                logToConsole(`TTX compiled to ${result.format} successfully (${result.data.length} bytes)`);
+            } catch (error) {
+                logToConsole(`Error compiling TTX: ${error.message}`);
+                displayError('fontOutput', error.message);
+            }
+        }
+        
+        // Download functions
+        function downloadTTX() {
+            const output = document.getElementById('ttxOutput').textContent;
+            if (!output) return;
+            
+            const blob = new Blob([output], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'font.ttx';
+            a.click();
+            URL.revokeObjectURL(url);
+            logToConsole('TTX file downloaded');
+        }
+        
+        function downloadFont() {
+            if (!currentCompiledFont) return;
+            
+            const flavor = document.getElementById('outputFlavor').value || 'ttf';
+            const blob = new Blob([currentCompiledFont], { type: 'font/truetype' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `font.${flavor}`;
+            a.click();
+            URL.revokeObjectURL(url);
+            logToConsole('Font file downloaded');
+        }
+        
+        function clearConsole() {
+            document.getElementById('console').textContent = '';
+        }
+        
+        // Event listeners
+        document.getElementById('convertToTTX').addEventListener('click', convertToTTX);
+        document.getElementById('convertToFont').addEventListener('click', convertToFont);
+        document.getElementById('downloadTTX').addEventListener('click', downloadTTX);
+        document.getElementById('downloadFont').addEventListener('click', downloadFont);
+        document.getElementById('clearConsole').addEventListener('click', clearConsole);
+        
+        // Initialize
+        setupFileHandling();
+        initTTX();
+    </script>
+</body>
+</html>

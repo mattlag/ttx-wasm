@@ -1,0 +1,198 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    name: Build and Test for Release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        registry-url: 'https://registry.npmjs.org'
+        
+    - name: Setup Emscripten
+      uses: mymindstorm/setup-emsdk@v12
+      with:
+        version: 'latest'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Run tests
+      run: npm test
+      
+    - name: Build WASM module
+      run: |
+        cd build
+        make wasm
+        
+    - name: Build package
+      run: npm run build
+      
+    - name: Run integration tests
+      run: npm run test:integration
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-build
+        path: |
+          dist/
+          package.json
+          README.md
+          LICENSE
+
+  create-release:
+    runs-on: ubuntu-latest
+    name: Create GitHub Release
+    needs: build-and-test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: release-build
+        
+    - name: Extract version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Extract changelog section for this version
+        sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | head -n -1 > release_notes.md
+        echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+        cat release_notes.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+      env:
+        VERSION: ${{ steps.get_version.outputs.VERSION }}
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release v${{ steps.get_version.outputs.VERSION }}
+        body: ${{ steps.changelog.outputs.CHANGELOG }}
+        files: |
+          dist/ttx-wasm.wasm
+          dist/ttx-wasm.js
+          dist/index.js
+          dist/index.d.ts
+        draft: false
+        prerelease: ${{ contains(steps.get_version.outputs.VERSION, '-') }}
+
+  publish-npm:
+    runs-on: ubuntu-latest
+    name: Publish to NPM
+    needs: [build-and-test, create-release]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        registry-url: 'https://registry.npmjs.org'
+        
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: release-build
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Publish to NPM
+      run: npm publish --access public
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-github-packages:
+    runs-on: ubuntu-latest
+    name: Publish to GitHub Packages
+    needs: [build-and-test, create-release]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        registry-url: 'https://npm.pkg.github.com'
+        
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: release-build
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Configure package for GitHub Packages
+      run: |
+        # Update package.json to use GitHub Packages scope
+        npm pkg set name="@${{ github.repository_owner }}/ttx-wasm"
+        npm pkg set publishConfig.registry="https://npm.pkg.github.com"
+        
+    - name: Publish to GitHub Packages
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-docs:
+    runs-on: ubuntu-latest
+    name: Update Documentation
+    needs: create-release
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Generate API documentation
+      run: npm run docs:generate
+      
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/_build/html
+        cname: ttx-wasm.dev  # Replace with your domain if available
