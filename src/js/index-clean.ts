@@ -3,7 +3,7 @@
  * Now powered by Pyodide for 100% Python FontTools compatibility
  */
 
-import { pyodideTTX } from './pyodide-ttx';
+import { pyodideTTX } from './pyodide-ttx.js';
 
 export interface TTXOptions {
   tables?: string[];

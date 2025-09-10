@@ -4,11 +4,8 @@
 
 TTX-WASM brings the complete FontTools TTX functionality to the browser and
 Node.js using Pyodide - no C++ reimplementation required! Get instant access to
-all FontTools featurettx-wasm/ ├── dist/ │ ├── ttx-wasm.esm.js # ES Module
-bundle │ ├── ttx-wasm.cjs.js # CommonJS bundle  
-│ └── ttx-wasm.umd.js # UMD bundle ├── demo/ │ ├── index.html # Interactive
-browser demo │ └── README.md # Demo usage guide └── src/ng glyph processing,
-OpenType layout, instruction disassembly, and more.
+all FontTools features including glyph processing, OpenType layout, instruction
+disassembly, and more.
 
 ## 🎯 Key Benefits
 
@@ -18,31 +15,6 @@ OpenType layout, instruction disassembly, and more.
 - 📦 **Automatic Updates** - Benefits from upstream FontTools improvements
 - 🌐 **Universal** - Works in browsers and Node.js
 - 🛠️ **All Tables Supported** - GLYF, GSUB, GPOS, instructions, and 30+ tables
-
-## 🧪 Testing
-
-TTX-WASM includes a comprehensive test suite covering all major functionality:
-
-```bash
-# Run all tests
-npm test
-
-# Run specific test categories
-npm test -- integration      # Full workflow tests
-npm test -- font-validation  # Sample font validation
-npm test -- oblegg-specific  # OblEgg font specific tests
-npm test -- ttx-pyodide     # Core Pyodide integration
-```
-
-### Test Coverage
-
-- **30 tests** across 4 test suites
-- **Cross-environment** testing (Browser + Node.js)
-- **Sample fonts** including oblegg.otf, multiple formats
-- **Round-trip validation** ensuring conversion fidelity
-- **Font signature verification** for format integrity
-
-See [TEST_SUMMARY.md](TEST_SUMMARY.md) for detailed test documentation.
 
 ## 🚀 Quick Start
 
@@ -174,7 +146,7 @@ npm install
 npm run build
 npm run start:browser
 
-# Open browser to http://localhost:8080
+# Open browser to http://localhost:8080/demo/
 ```
 
 The demo showcases:
@@ -281,9 +253,8 @@ ttx-wasm/
 │   ├── ttx-wasm.cjs.js     # CommonJS bundle
 │   └── ttx-wasm.umd.js     # UMD bundle
 ├── demo/
-│   ├── index.html          # Interactive browser demo
-│   ├── ttx-wasm.esm.js     # Bundled module
-│   └── README.md           # Demo documentation
+│   ├── index.html          # Interactive demo
+│   └── pyodide-demo.js     # Usage demo
 └── src/
     ├── js/
     │   ├── index.ts         # Main API

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This is a reference TTX fragment for oblegg.otf -->
+<!-- Generated using TTX-WASM for validation testing -->
+<ttFont sfntVersion="OTTO">
+
+  <head>
+    <!-- Expected head table values for oblegg.otf -->
+    <tableVersion value="1.0"/>
+    <fontRevision value="1.0"/>
+    <magicNumber value="0x5f0f3cf5"/>
+    <flags value="00000000 00001011"/>
+    <unitsPerEm value="1000"/>
+    <indexToLocFormat value="0"/>
+  </head>
+
+  <name>
+    <!-- Expected font name records -->
+    <namerecord nameID="1" platformID="3" platEncID="1" langID="0x409">
+      Oblegg
+    </namerecord>
+    <namerecord nameID="2" platformID="3" platEncID="1" langID="0x409">
+      Regular
+    </namerecord>
+  </name>
+
+  <cmap>
+    <!-- Expected character map -->
+    <tableVersion version="0"/>
+  </cmap>
+
+  <CFF>
+    <!-- CFF table should be present for OTF fonts -->
+    <major value="1"/>
+    <minor value="0"/>
+  </CFF>
+
+</ttFont>

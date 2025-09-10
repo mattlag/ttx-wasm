@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TTX-WASM: Font ⇄ XML Converter</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #1a1a1a;
+        color: #e2e8f0;
+        line-height: 1.6;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .header {
+        text-align: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+      }
+
+      .header p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+
+      .container {
+        flex: 1;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+        width: 100%;
+      }
+
+      .status {
+        text-align: center;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+
+      .status.loading {
+        background: #2d3748;
+        border: 1px solid #4a5568;
+        color: #a0aec0;
+      }
+
+      .status.ready {
+        background: #2d5a27;
+        border: 1px solid #48bb78;
+        color: #9ae6b4;
+      }
+
+      .status.error {
+        background: #742a2a;
+        border: 1px solid #f56565;
+        color: #feb2b2;
+      }
+
+      .drop-zone {
+        border: 3px dashed #4a5568;
+        border-radius: 12px;
+        padding: 3rem;
+        text-align: center;
+        background: #2d3748;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 2rem;
+      }
+
+      .drop-zone:hover,
+      .drop-zone.dragover {
+        border-color: #667eea;
+        background: #374151;
+        transform: translateY(-2px);
+      }
+
+      .drop-zone-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+      }
+
+      .drop-zone h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: #e2e8f0;
+      }
+
+      .drop-zone p {
+        color: #a0aec0;
+        font-size: 1rem;
+      }
+
+      .file-input {
+        display: none;
+      }
+
+      .editor-container {
+        display: none;
+        flex-direction: column;
+        height: 70vh;
+        background: #2d3748;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .editor-container.visible {
+        display: flex;
+      }
+
+      .editor-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: #1a202c;
+        border-bottom: 1px solid #4a5568;
+      }
+
+      .editor-info {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .file-name {
+        font-weight: 600;
+        color: #e2e8f0;
+      }
+
+      .file-size {
+        color: #a0aec0;
+        font-size: 0.9rem;
+      }
+
+      .editor-actions {
+        display: flex;
+        gap: 1rem;
+      }
+
+      .btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn-primary {
+        background: #667eea;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #5a6fd8;
+      }
+
+      .btn-secondary {
+        background: #4a5568;
+        color: #e2e8f0;
+      }
+
+      .btn-secondary:hover {
+        background: #2d3748;
+      }
+
+      .editor {
+        flex: 1;
+        width: 100%;
+        background: #1a202c;
+        color: #e2e8f0;
+        border: none;
+        padding: 1rem;
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        resize: none;
+        outline: none;
+      }
+
+      .editor:focus {
+        background: #2d3748;
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #4a5568;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      @media (max-width: 768px) {
+        .header h1 {
+          font-size: 2rem;
+        }
+
+        .container {
+          padding: 1rem;
+        }
+
+        .drop-zone {
+          padding: 2rem 1rem;
+        }
+
+        .editor-container {
+          height: 60vh;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>TTX-WASM</h1>
+      <p>Convert fonts to XML and back — Edit font metadata in real-time</p>
+    </div>
+
+    <div class="container">
+      <div id="status" class="status loading">
+        <span class="spinner"></span>
+        Loading TTX engine...
+      </div>
+
+      <div id="dropZone" class="drop-zone">
+        <div class="drop-zone-icon">📁</div>
+        <h3>Drop a font file or TTX XML here</h3>
+        <p>Supports .ttf, .otf, .woff, .woff2, .ttc, and .ttx files</p>
+        <input
+          type="file"
+          id="fileInput"
+          class="file-input"
+          accept=".ttf,.otf,.woff,.woff2,.ttc,.ttx,.xml"
+        />
+      </div>
+
+      <div id="editorContainer" class="editor-container">
+        <div class="editor-header">
+          <div class="editor-info">
+            <span id="fileName" class="file-name">font.ttx</span>
+            <span id="fileSize" class="file-size">Loading...</span>
+          </div>
+          <div class="editor-actions">
+            <button id="downloadTTX" class="btn btn-secondary">💾 Download TTX</button>
+            <button id="exportFont" class="btn btn-primary">🚀 Export Font</button>
+            <button id="newFile" class="btn btn-secondary">📁 New File</button>
+          </div>
+        </div>
+        <textarea
+          id="xmlEditor"
+          class="editor"
+          placeholder="TTX XML content will appear here..."
+        ></textarea>
+      </div>
+    </div>
+
+    <script type="module">
+      import { TTX } from './ttx-wasm.esm.js';
+
+      class TTXDemo {
+        constructor() {
+          this.currentFile = null;
+          this.currentFileName = '';
+          this.isFont = false;
+
+          this.initializeElements();
+          this.setupEventListeners();
+          this.initializeTTX();
+        }
+
+        initializeElements() {
+          this.status = document.getElementById('status');
+          this.dropZone = document.getElementById('dropZone');
+          this.fileInput = document.getElementById('fileInput');
+          this.editorContainer = document.getElementById('editorContainer');
+          this.fileName = document.getElementById('fileName');
+          this.fileSize = document.getElementById('fileSize');
+          this.xmlEditor = document.getElementById('xmlEditor');
+          this.downloadTTX = document.getElementById('downloadTTX');
+          this.exportFont = document.getElementById('exportFont');
+          this.newFile = document.getElementById('newFile');
+        }
+
+        setupEventListeners() {
+          // Drop zone events
+          this.dropZone.addEventListener('click', () => this.fileInput.click());
+          this.dropZone.addEventListener('dragover', this.handleDragOver.bind(this));
+          this.dropZone.addEventListener('dragleave', this.handleDragLeave.bind(this));
+          this.dropZone.addEventListener('drop', this.handleDrop.bind(this));
+
+          // File input
+          this.fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+
+          // Buttons
+          this.downloadTTX.addEventListener('click', this.downloadTTXFile.bind(this));
+          this.exportFont.addEventListener('click', this.exportFontFile.bind(this));
+          this.newFile.addEventListener('click', this.resetInterface.bind(this));
+        }
+
+        async initializeTTX() {
+          try {
+            this.updateStatus('loading', 'Initializing TTX engine...');
+            await TTX.initialize();
+            this.updateStatus('ready', 'Ready! Drop a font file or TTX XML to get started.');
+          } catch (error) {
+            console.error('Failed to initialize TTX:', error);
+            this.updateStatus('error', 'Failed to initialize. Please refresh the page.');
+          }
+        }
+
+        updateStatus(type, message) {
+          this.status.className = `status ${type}`;
+          this.status.innerHTML =
+            type === 'loading' ? `<span class="spinner"></span> ${message}` : message;
+        }
+
+        handleDragOver(e) {
+          e.preventDefault();
+          this.dropZone.classList.add('dragover');
+        }
+
+        handleDragLeave(e) {
+          e.preventDefault();
+          this.dropZone.classList.remove('dragover');
+        }
+
+        handleDrop(e) {
+          e.preventDefault();
+          this.dropZone.classList.remove('dragover');
+
+          const files = e.dataTransfer.files;
+          if (files.length > 0) {
+            this.processFile(files[0]);
+          }
+        }
+
+        handleFileSelect(e) {
+          const files = e.target.files;
+          if (files.length > 0) {
+            this.processFile(files[0]);
+          }
+        }
+
+        async processFile(file) {
+          this.currentFile = file;
+          this.currentFileName = file.name;
+
+          try {
+            this.updateStatus('loading', `Processing ${file.name}...`);
+
+            const fileExtension = file.name.toLowerCase().split('.').pop();
+            const arrayBuffer = await file.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+
+            if (fileExtension === 'ttx' || fileExtension === 'xml') {
+              // Handle TTX/XML file
+              this.isFont = false;
+              const xmlContent = new TextDecoder().decode(uint8Array);
+              this.showEditor(xmlContent, file.name, file.size);
+              this.updateStatus('ready', `TTX file loaded. Edit and export as font.`);
+            } else {
+              // Handle font file
+              this.isFont = true;
+              const xmlContent = await TTX.dumpToTTX(uint8Array, {
+                tables: [], // Empty means all tables
+                disassembleInstructions: true,
+              });
+              this.showEditor(xmlContent, file.name.replace(/\.[^.]+$/, '.ttx'), null);
+              this.updateStatus('ready', `Font converted to TTX. Edit and export.`);
+            }
+          } catch (error) {
+            console.error('Error processing file:', error);
+            this.updateStatus('error', `Error: ${error.message}`);
+          }
+        }
+
+        showEditor(content, fileName, originalSize) {
+          this.fileName.textContent = fileName;
+          this.fileSize.textContent = originalSize
+            ? this.formatFileSize(originalSize)
+            : `${Math.round(content.length / 1024)} KB (XML)`;
+
+          this.xmlEditor.value = content;
+          this.editorContainer.classList.add('visible');
+          this.dropZone.style.display = 'none';
+        }
+
+        async downloadTTXFile() {
+          const content = this.xmlEditor.value;
+          const blob = new Blob([content], { type: 'application/xml' });
+          const url = URL.createObjectURL(blob);
+
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = this.fileName.endsWith('.ttx') ? this.fileName : `${this.fileName}.ttx`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+
+        async exportFontFile() {
+          try {
+            this.updateStatus('loading', 'Converting TTX to font...');
+
+            const xmlContent = this.xmlEditor.value;
+            const fontData = await TTX.compileFromTTX(xmlContent);
+
+            // Determine output filename and MIME type
+            let outputName = this.currentFileName;
+            let mimeType = 'font/ttf';
+
+            if (this.isFont) {
+              // Keep original extension if we started with a font
+              outputName = this.currentFileName;
+            } else {
+              // Convert .ttx to .ttf if we started with TTX
+              outputName = this.fileName.replace(/\.(ttx|xml)$/i, '.ttf');
+            }
+
+            // Detect font type from data for proper MIME type
+            const header = new Uint8Array(fontData.slice(0, 4));
+            const signature = Array.from(header)
+              .map(b => String.fromCharCode(b))
+              .join('');
+
+            if (signature === 'OTTO') {
+              mimeType = 'font/otf';
+              if (outputName.endsWith('.ttf')) {
+                outputName = outputName.replace('.ttf', '.otf');
+              }
+            }
+
+            const blob = new Blob([fontData], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = outputName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            this.updateStatus('ready', `Font exported successfully as ${outputName}`);
+          } catch (error) {
+            console.error('Error exporting font:', error);
+            this.updateStatus('error', `Export failed: ${error.message}`);
+          }
+        }
+
+        resetInterface() {
+          this.editorContainer.classList.remove('visible');
+          this.dropZone.style.display = 'block';
+          this.xmlEditor.value = '';
+          this.currentFile = null;
+          this.currentFileName = '';
+          this.isFont = false;
+          this.fileInput.value = '';
+          this.updateStatus('ready', 'Ready! Drop a font file or TTX XML to get started.');
+        }
+
+        formatFileSize(bytes) {
+          if (bytes === 0) return '0 Bytes';
+          const k = 1024;
+          const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+          const i = Math.floor(Math.log(bytes) / Math.log(k));
+          return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+      }
+
+      // Initialize the demo when the page loads
+      new TTXDemo();
+    </script>
+  </body>
+</html>

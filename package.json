@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "build": "npm run clean && npm run build:js",
-    "build:js": "rollup -c",
+    "build:js": "rollup -c && powershell -Command \"Copy-Item dist/ttx-wasm.esm.js demo/\"",
     "build:dev": "npm run build:js",
     "test": "jest",
     "test:unit": "jest --testPathPattern=unit",
@@ -31,8 +31,8 @@
     "prepublishOnly": "npm run lint && npm run test && npm run build",
     "docs": "typedoc src/js/index.ts --out docs/_build",
     "docs:generate": "npm run docs",
-    "start:demo": "npm run build:dev && node examples/node-example.js",
-    "start:browser": "npm run build:dev && npx http-server examples -p 8080"
+    "start:demo": "npm run build:dev && npx http-server demo -p 8080 -o",
+    "start:browser": "npm run build:dev && npx http-server demo -p 8080 -o"
   },
   "keywords": [
     "fonts",
@@ -81,6 +81,7 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "iconv-lite": "^0.6.3"
+    "iconv-lite": "^0.6.3",
+    "pyodide": "^0.28.2"
   }
 }

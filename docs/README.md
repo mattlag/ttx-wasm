@@ -1,11 +1,12 @@
 # TTX-WASM Documentation
 
 ## Table of Contents
+
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [API Reference](#api-reference)
 - [Options](#options)
-- [Examples](#examples)
+- [Demo](#demo)
 - [Font Format Support](#font-format-support)
 - [Building from Source](#building-from-source)
 - [Contributing](#contributing)
@@ -20,10 +21,10 @@ npm install ttx-wasm
 
 ```html
 <script type="module">
-import { createTTX } from 'ttx-wasm';
+  import { createTTX } from 'ttx-wasm';
 
-const ttx = await createTTX();
-// Use ttx for font operations
+  const ttx = await createTTX();
+  // Use ttx for font operations
 </script>
 ```
 
@@ -82,50 +83,62 @@ console.log(format); // 'TTF', 'OTF', 'WOFF', 'WOFF2', 'TTC', or 'TTX'
 ### TTX Class
 
 #### `new TTX()`
+
 Creates a new TTX instance.
 
 #### `async init(): Promise<void>`
+
 Initializes the WASM module. Must be called before using other methods.
 
 #### `async detectFormat(data: Uint8Array): Promise<string>`
+
 Detects the format of a font file.
 
 **Parameters:**
+
 - `data` - Font file data as Uint8Array
 
 **Returns:** Font format string ('TTF', 'OTF', 'WOFF', 'WOFF2', 'TTC', 'TTX')
 
 #### `async getFontInfo(data: Uint8Array, options?: TTXOptions): Promise<FontInfo>`
+
 Gets detailed information about a font file.
 
 **Parameters:**
+
 - `data` - Font file data as Uint8Array
 - `options` - Optional conversion options
 
 **Returns:** FontInfo object containing format, tables, and metadata
 
 #### `async dump(data: Uint8Array, options?: TTXOptions): Promise<TTXResult>`
+
 Converts a binary font file to TTX XML format.
 
 **Parameters:**
+
 - `data` - Font file data as Uint8Array
 - `options` - Optional conversion options
 
 **Returns:** TTXResult object containing the XML data and metadata
 
 #### `async compile(data: string | Uint8Array, options?: TTXOptions): Promise<TTXResult>`
+
 Converts a TTX XML file to binary font format.
 
 **Parameters:**
+
 - `data` - TTX XML data as string or Uint8Array
 - `options` - Optional conversion options
 
 **Returns:** TTXResult object containing the binary font data
 
 #### `async listTables(data: Uint8Array, options?: TTXOptions): Promise<string[]>`
+
 Lists all tables present in a font file.
 
 **Parameters:**
+
 - `data` - Font file data as Uint8Array
 - `options` - Optional conversion options
 
@@ -134,12 +147,15 @@ Lists all tables present in a font file.
 ### Convenience Functions
 
 #### `async createTTX(): Promise<TTX>`
+
 Creates and initializes a TTX instance.
 
 #### `async fontToTTX(data: Uint8Array, options?: TTXOptions): Promise<string>`
+
 Converts font data to TTX XML string.
 
 #### `async ttxToFont(data: string | Uint8Array, options?: TTXOptions): Promise<Uint8Array>`
+
 Converts TTX XML to binary font data.
 
 ## Options
@@ -150,28 +166,28 @@ Converts TTX XML to binary font data.
 interface TTXOptions {
   /** List of tables to include (if not specified, all tables are included) */
   onlyTables?: string[];
-  
+
   /** List of tables to exclude */
   skipTables?: string[];
-  
+
   /** Split tables into separate files */
   splitTables?: boolean;
-  
+
   /** Split glyphs into separate files */
   splitGlyphs?: boolean;
-  
+
   /** Disassemble TrueType instructions */
   disassembleInstructions?: boolean;
-  
+
   /** Font number for TTC files (starting from 0) */
   fontNumber?: number;
-  
+
   /** Ignore decompilation errors */
   ignoreDecompileErrors?: boolean;
-  
+
   /** Recalculate glyph bounding boxes */
   recalcBBoxes?: boolean;
-  
+
   /** Output format flavor (e.g., 'woff', 'woff2') */
   flavor?: string;
 }
@@ -180,36 +196,39 @@ interface TTXOptions {
 ### Common Options
 
 #### Table Selection
+
 ```javascript
 // Include only specific tables
 const options = {
-  onlyTables: ['head', 'name', 'cmap']
+  onlyTables: ['head', 'name', 'cmap'],
 };
 
 // Exclude specific tables
 const options = {
-  skipTables: ['glyf', 'loca']
+  skipTables: ['glyf', 'loca'],
 };
 ```
 
 #### Font Compilation
+
 ```javascript
 // Compile to WOFF format
 const options = {
   flavor: 'woff',
-  recalcBBoxes: true
+  recalcBBoxes: true,
 };
 ```
 
 #### TrueType Collections
+
 ```javascript
 // Extract specific font from TTC
 const options = {
-  fontNumber: 1  // Second font in collection
+  fontNumber: 1, // Second font in collection
 };
 ```
 
-## Examples
+## Demo
 
 ### Basic Font Conversion
 
@@ -218,19 +237,19 @@ import { createTTX } from 'ttx-wasm';
 
 async function convertFont(fontData) {
   const ttx = await createTTX();
-  
+
   // Get font information
   const info = await ttx.getFontInfo(fontData);
   console.log(`Font: ${info.metadata.family} ${info.metadata.style}`);
   console.log(`Format: ${info.format}`);
   console.log(`Tables: ${info.tables.join(', ')}`);
-  
+
   // Convert to TTX
   const ttxResult = await ttx.dump(fontData);
-  
+
   // Convert back to font
   const fontResult = await ttx.compile(ttxResult.data);
-  
+
   return fontResult.data;
 }
 ```
@@ -240,12 +259,12 @@ async function convertFont(fontData) {
 ```javascript
 // Dump only metadata tables
 const metadataOnly = await ttx.dump(fontData, {
-  onlyTables: ['head', 'name', 'OS/2', 'hhea', 'maxp']
+  onlyTables: ['head', 'name', 'OS/2', 'hhea', 'maxp'],
 });
 
 // Dump everything except glyph data
 const noGlyphs = await ttx.dump(fontData, {
-  skipTables: ['glyf', 'loca', 'CFF ', 'CFF2']
+  skipTables: ['glyf', 'loca', 'CFF ', 'CFF2'],
 });
 ```
 
@@ -254,12 +273,12 @@ const noGlyphs = await ttx.dump(fontData, {
 ```javascript
 // Convert TTF to WOFF
 const woffResult = await ttx.compile(ttxData, {
-  flavor: 'woff'
+  flavor: 'woff',
 });
 
 // Convert TTF to WOFF2
 const woff2Result = await ttx.compile(ttxData, {
-  flavor: 'woff2'
+  flavor: 'woff2',
 });
 ```
 
@@ -269,11 +288,11 @@ const woff2Result = await ttx.compile(ttxData, {
 try {
   const ttx = await createTTX();
   const result = await ttx.dump(fontData);
-  
+
   if (result.warnings.length > 0) {
     console.warn('Warnings:', result.warnings);
   }
-  
+
   console.log('Conversion successful');
 } catch (error) {
   console.error('Conversion failed:', error.message);
@@ -287,24 +306,24 @@ try {
 async function handleFontFile(file) {
   const arrayBuffer = await file.arrayBuffer();
   const fontData = new Uint8Array(arrayBuffer);
-  
+
   const ttx = await createTTX();
   const ttxResult = await ttx.dump(fontData);
-  
+
   // Create download link
   const blob = new Blob([ttxResult.data], { type: 'application/xml' });
   const url = URL.createObjectURL(blob);
-  
+
   const link = document.createElement('a');
   link.href = url;
   link.download = file.name.replace(/\.[^.]+$/, '.ttx');
   link.click();
-  
+
   URL.revokeObjectURL(url);
 }
 
 // File input event
-document.getElementById('fontInput').addEventListener('change', (e) => {
+document.getElementById('fontInput').addEventListener('change', e => {
   if (e.target.files.length > 0) {
     handleFontFile(e.target.files[0]);
   }
@@ -314,6 +333,7 @@ document.getElementById('fontInput').addEventListener('change', (e) => {
 ## Font Format Support
 
 ### Input Formats
+
 - **TTF** (TrueType Font) - ✅ Full support
 - **OTF** (OpenType Font with CFF data) - ✅ Full support
 - **WOFF** (Web Open Font Format) - 🚧 Basic support
@@ -322,6 +342,7 @@ document.getElementById('fontInput').addEventListener('change', (e) => {
 - **TTX** (TTX XML format) - ✅ Full support
 
 ### Output Formats
+
 - **TTF** (TrueType Font) - ✅ Full support
 - **OTF** (OpenType Font) - ✅ Full support
 - **WOFF** (Web Open Font Format) - 🚧 Basic support
@@ -333,6 +354,7 @@ document.getElementById('fontInput').addEventListener('change', (e) => {
 The following font tables are supported for conversion:
 
 #### Core Tables
+
 - `head` - Font header
 - `hhea` - Horizontal header
 - `maxp` - Maximum profile
@@ -343,6 +365,7 @@ The following font tables are supported for conversion:
 - `hmtx` - Horizontal metrics
 
 #### TrueType Tables
+
 - `glyf` - Glyph data
 - `loca` - Index to location
 - `fpgm` - Font program
@@ -351,6 +374,7 @@ The following font tables are supported for conversion:
 - `gasp` - Grid-fitting and scan-conversion procedure
 
 #### OpenType Tables
+
 - `CFF ` - Compact Font Format table
 - `CFF2` - Compact Font Format version 2
 - `GDEF` - Glyph definition data
@@ -358,6 +382,7 @@ The following font tables are supported for conversion:
 - `GSUB` - Glyph substitution data
 
 #### Advanced Tables
+
 - `kern` - Kerning
 - `LTSH` - Linear threshold
 - `VDMX` - Vertical device metrics
@@ -368,6 +393,7 @@ And many more... See the full list in the FontTools documentation.
 ## Building from Source
 
 ### Prerequisites
+
 - Node.js 16+
 - Emscripten SDK
 - Make
@@ -429,7 +455,8 @@ npm run clean
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
+We welcome contributions! Please see [CONTRIBUTING.md](../CONTRIBUTING.md) for
+guidelines.
 
 ### Development Setup
 
@@ -450,9 +477,11 @@ We welcome contributions! Please see [CONTRIBUTING.md](../CONTRIBUTING.md) for g
 
 ### Reporting Issues
 
-Please report issues on the [GitHub Issues](https://github.com/mattlag/ttx-wasm/issues) page.
+Please report issues on the
+[GitHub Issues](https://github.com/mattlag/ttx-wasm/issues) page.
 
 Include:
+
 - Font file causing the issue (if possible)
 - Expected behavior
 - Actual behavior
@@ -461,4 +490,5 @@ Include:
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](../LICENSE)
+file for details.
