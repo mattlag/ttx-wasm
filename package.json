@@ -1,6 +1,6 @@
 {
   "name": "ttx-wasm",
-  "version": "0.1.0",
+  "version": "1.0.2",
   "type": "module",
   "description": "A WebAssembly port of FontTools TTX for JavaScript environments",
   "main": "dist/ttx-wasm.cjs.js",

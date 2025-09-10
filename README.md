@@ -1,20 +1,14 @@
 # TTX-WASM
 
-**100% Python FontTools TTX Compatibility in WebAssembly**
+**FontTools TTX in WebAssembly**
 
 TTX-WASM brings the complete FontTools TTX functionality to the browser and
-Node.js using Pyodide - no C++ reimplementation required! Get instant access to
-all FontTools features including glyph processing, OpenType layout, instruction
-disassembly, and more.
+Node.js - either as a npm package, or just grab a pre-complied WASM module from
+GitHub.
 
-## 🎯 Key Benefits
-
-- ✅ **100% Feature Parity** - Complete Python FontTools TTX functionality
-- ⚡ **Zero Reimplementation** - Uses actual Python FontTools code via Pyodide
-- 🔄 **Bidirectional Conversion** - Font ↔ TTX XML with full fidelity
-- 📦 **Automatic Updates** - Benefits from upstream FontTools improvements
-- 🌐 **Universal** - Works in browsers and Node.js
-- 🛠️ **All Tables Supported** - GLYF, GSUB, GPOS, instructions, and 30+ tables
+**A quick note** this project was 100% vibe coded, so you probably shouldn't
+rely on this for important stuff. If something is broken, let me know over on
+GitHub.
 
 ## 🚀 Quick Start
 
@@ -162,21 +156,10 @@ const fontBinary = await TTX.compileFromTTX(ttxContent, {
 });
 ```
 
-## 📊 Feature Comparison
-
-| Feature                 | TTX-WASM (Pyodide)  | Previous C++ Approach |
-| ----------------------- | ------------------- | --------------------- |
-| Font Tables             | **40+ tables** ✅   | 3 tables ❌           |
-| GLYF/CFF Processing     | **Full support** ✅ | Missing ❌            |
-| OpenType Layout         | **GSUB/GPOS** ✅    | Missing ❌            |
-| Instruction Disassembly | **Complete** ✅     | Missing ❌            |
-| TTX → Font Compilation  | **Full support** ✅ | Limited ❌            |
-| Development Time        | **Hours** ⚡        | Months 🐌             |
-| Maintenance             | **Automatic** 🔄    | Manual rewrites 🔧    |
-
 ## 🎮 Interactive Demo
 
-Check out the live demo to see TTX-WASM in action:
+Check out the live demo to see TTX-WASM in action. This demo lets you import a
+font file, see and edit the XML, then re-save a font file with changes.
 
 ```bash
 # Run locally
@@ -186,13 +169,6 @@ npm run start:browser
 
 # Open browser to http://localhost:8080/demo/
 ```
-
-The demo showcases:
-
-- Real-time font processing in the browser
-- Complete FontTools functionality
-- Interactive TTX conversion with options
-- Performance metrics and feature comparison
 
 ## 🧪 Testing
 
@@ -268,20 +244,6 @@ interface FontInfo {
 }
 ```
 
-## 🚀 Why Pyodide?
-
-We initially built a C++ reimplementation of FontTools TTX, achieving ~20%
-feature parity after significant effort. Then we discovered **Pyodide** - a
-Python runtime for WebAssembly that lets us run the actual FontTools code:
-
-**Pyodide Advantages:**
-
-- 🎯 **Instant 100% parity** - Full FontTools functionality immediately
-- ⚡ **Rapid development** - Hours instead of months
-- 🔄 **Automatic updates** - Benefits from FontTools improvements
-- 🛡️ **Proven stability** - Years of production FontTools usage
-- 🧩 **Complete ecosystem** - All dependencies included
-
 ## 📦 Package Contents
 
 ```
@@ -301,26 +263,9 @@ ttx-wasm/
         └── ttx_reference.py # Python FontTools reference
 ```
 
-## 🤝 Contributing
-
-Contributions are welcome! Since we use the actual Python FontTools:
-
-1. **Bug reports** - Test with the browser demo and provide font samples
-2. **Feature requests** - Most FontTools features are already available!
-3. **Performance improvements** - Optimize Pyodide loading and caching
-4. **Documentation** - Help improve demo and guides
-
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.
-
-## 🙏 Acknowledgments
-
-- **FontTools Team** - For the incredible Python font processing library
-- **Pyodide Project** - For making Python in WebAssembly possible
-- **FontTools TTX** - The gold standard for font conversion tools
-
----
 
 **Ready to process fonts with 100% FontTools compatibility?** 🚀
 
