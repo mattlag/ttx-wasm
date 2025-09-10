@@ -289,7 +289,7 @@
     </div>
 
     <script type="module">
-      import { TTX } from './ttx-wasm.esm.js?v=20250910_fix2';
+      import { TTX } from './ttx-wasm.esm.js';
 
       class TTXDemo {
         constructor() {
@@ -426,7 +426,9 @@
 
           const a = document.createElement('a');
           a.href = url;
-          a.download = this.fileName.endsWith('.ttx') ? this.fileName : `${this.fileName}.ttx`;
+          a.download = this.fileName.textContent.endsWith('.ttx')
+            ? this.fileName.textContent
+            : `${this.fileName.textContent}.ttx`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -449,7 +451,7 @@
               outputName = this.currentFileName;
             } else {
               // Convert .ttx to .ttf if we started with TTX
-              outputName = this.fileName.replace(/\.(ttx|xml)$/i, '.ttf');
+              outputName = this.fileName.textContent.replace(/\.(ttx|xml)$/i, '.ttf');
             }
 
             // Detect font type from data for proper MIME type

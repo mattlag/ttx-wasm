@@ -44,11 +44,11 @@ export class PyodideTTX {
       console.log('Pyodide loaded successfully, version:', this.pyodide.version);
       console.log('Available globals methods:', Object.keys(this.pyodide.globals));
 
-      console.log('Installing FontTools...');
+      console.log('Installing FontTools and dependencies...');
       await this.pyodide.loadPackage(['micropip']);
       await this.pyodide.runPythonAsync(`
         import micropip
-        await micropip.install('fonttools')
+        await micropip.install(['fonttools', 'brotli'])
       `);
 
       // Load our Python TTX reference implementation
