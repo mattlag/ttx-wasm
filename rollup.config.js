@@ -13,8 +13,9 @@ const baseConfig = {
     commonjs(),
     typescript({
       tsconfig: './tsconfig.json',
-      declaration: false,
-      declarationMap: false,
+      declaration: true,
+      declarationDir: 'types',
+      declarationMap: true,
     }),
     copy({
       targets: [

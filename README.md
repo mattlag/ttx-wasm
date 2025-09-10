@@ -34,7 +34,8 @@ cd ttx-wasm
 ### Using Pre-compiled Files
 
 For quick integration without a build process, you can use the pre-compiled
-files directly from the `dist/` folder:
+ `dist/` folder. Be sure to copy all the contents, then reference the 
+ specific JavaScript file based on your project type.
 
 ```html
 <!-- ES Module (recommended) -->
