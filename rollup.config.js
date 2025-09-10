@@ -1,6 +1,7 @@
 import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
+import copy from 'rollup-plugin-copy';
 
 const baseConfig = {
   input: 'src/js/index.ts',
@@ -12,9 +13,43 @@ const baseConfig = {
     commonjs(),
     typescript({
       tsconfig: './tsconfig.json',
+      declaration: false,
+      declarationMap: false,
+    }),
+    copy({
+      targets: [
+        {
+          src: [
+            'node_modules/pyodide/pyodide.asm.js',
+            'node_modules/pyodide/pyodide.asm.wasm',
+            'node_modules/pyodide/pyodide.mjs',
+            'node_modules/pyodide/pyodide-lock.json',
+            'node_modules/pyodide/python_stdlib.zip',
+          ],
+          dest: 'dist/pyodide',
+        },
+        {
+          src: [
+            'build-assets/python-wheels/micropip-0.10.1-py3-none-any.whl',
+            'build-assets/python-wheels/fonttools-4.56.0-py3-none-any.whl',
+            'build-assets/python-wheels/brotli-1.1.0-cp313-cp313-pyodide_2025_0_wasm32.whl',
+          ],
+          dest: 'dist/pyodide',
+        },
+      ],
     }),
   ],
-  external: ['fs', 'path'],
+  external: [
+    'fs',
+    'path',
+    'node:fs',
+    'node:fs/promises',
+    'node:path',
+    'node:url',
+    'node:crypto',
+    'node:vm',
+    'node:child_process',
+  ],
   // Inline dynamic imports to avoid multiple chunks
   preserveEntrySignatures: 'strict',
   treeshake: {
@@ -30,6 +65,7 @@ export default [
       format: 'es',
       sourcemap: true,
       inlineDynamicImports: true,
+      exports: 'named',
     },
   },
   {
@@ -40,6 +76,7 @@ export default [
       name: 'TTXWasm',
       sourcemap: true,
       inlineDynamicImports: true,
+      exports: 'named',
     },
   },
   {
@@ -49,6 +86,7 @@ export default [
       format: 'cjs',
       sourcemap: true,
       inlineDynamicImports: true,
+      exports: 'named',
     },
   },
 ];

@@ -21,19 +21,21 @@ class PyodideTTX {
         try {
             console.log('Loading Pyodide...');
             this.pyodide = await at({
-                indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.28.2/full/',
+                indexURL: './pyodide/', // Use local pyodide files
             });
             console.log('Pyodide loaded successfully, version:', this.pyodide.version);
             console.log('Available globals methods:', Object.keys(this.pyodide.globals));
             console.log('Installing FontTools and dependencies...');
+            // First load micropip package via JavaScript
             await this.pyodide.loadPackage(['micropip']);
+            // Then install our dependencies
             await this.pyodide.runPythonAsync(`
         import micropip
         await micropip.install(['fonttools', 'brotli'])
       `);
             // Load our Python TTX reference implementation
             console.log('Loading TTX implementation...');
-            await this.pyodide.runPython(`
+            await this.pyodide.runPythonAsync(`
       import sys
       from fontTools.ttLib import TTFont
       from fontTools.misc.timeTools import timestampSinceEpoch

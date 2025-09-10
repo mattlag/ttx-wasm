@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "build": "npm run clean && npm run build:js",
-    "build:js": "rollup -c && powershell -Command \"Copy-Item dist/ttx-wasm.esm.js demo/\"",
+    "build:js": "rollup -c && powershell -Command \"Copy-Item dist/ttx-wasm.esm.js demo/\" && powershell -Command \"Copy-Item -Recurse dist/pyodide demo/ -Force\"",
     "build:dev": "npm run build:js",
     "test": "jest",
     "test:unit": "jest --testPathPattern=unit",
@@ -73,6 +73,7 @@
     "prettier": "^3.1.0",
     "rimraf": "^5.0.5",
     "rollup": "^4.5.0",
+    "rollup-plugin-copy": "^3.5.0",
     "ts-jest": "^29.1.1",
     "tslib": "^2.8.1",
     "typedoc": "^0.25.4",
