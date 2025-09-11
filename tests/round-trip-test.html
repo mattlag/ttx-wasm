@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TTX Round-Trip Test Runner</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        border-bottom: 2px solid #007acc;
+        padding-bottom: 10px;
+      }
+      .status {
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+      .status.loading {
+        background: #e3f2fd;
+        color: #1976d2;
+        border-left: 4px solid #2196f3;
+      }
+      .status.success {
+        background: #e8f5e8;
+        color: #2e7d32;
+        border-left: 4px solid #4caf50;
+      }
+      .status.error {
+        background: #ffebee;
+        color: #c62828;
+        border-left: 4px solid #f44336;
+      }
+      .log {
+        background: #f8f8f8;
+        border: 1px solid #ddd;
+        padding: 15px;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        white-space: pre-wrap;
+        max-height: 400px;
+        overflow-y: auto;
+        margin: 20px 0;
+      }
+      .results {
+        background: #f0f8ff;
+        border: 1px solid #007acc;
+        padding: 20px;
+        border-radius: 4px;
+        margin: 20px 0;
+      }
+      button {
+        background: #007acc;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        margin: 10px 5px 10px 0;
+      }
+      button:hover {
+        background: #005a9e;
+      }
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .file-input {
+        margin: 10px 0;
+      }
+      .progress {
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>TTX Round-Trip Test Runner</h1>
+
+      <div class="file-input">
+        <label for="fontFile">Select font file (or use default oblegg.otf):</label><br />
+        <input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2,.ttc" />
+      </div>
+
+      <button id="runTest" onclick="runRoundTripTest()">Run Round-Trip Test</button>
+      <button id="clearLog" onclick="clearLog()">Clear Log</button>
+
+      <div id="status" class="status loading">Ready to run test</div>
+
+      <div class="log" id="log"></div>
+
+      <div id="results" class="results" style="display: none">
+        <h3>Test Results</h3>
+        <div id="resultContent"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { TTX } from '../dist/ttx-wasm.esm.js';
+
+      let logElement = document.getElementById('log');
+      let statusElement = document.getElementById('status');
+      let resultsElement = document.getElementById('results');
+      let resultContentElement = document.getElementById('resultContent');
+
+      function log(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        logElement.textContent += `[${timestamp}] ${message}\n`;
+        logElement.scrollTop = logElement.scrollHeight;
+      }
+
+      function setStatus(message, type = 'loading') {
+        statusElement.textContent = message;
+        statusElement.className = `status ${type}`;
+      }
+
+      function clearLog() {
+        logElement.textContent = '';
+        resultsElement.style.display = 'none';
+      }
+
+      window.clearLog = clearLog;
+
+      async function loadDefaultFont() {
+        try {
+          const response = await fetch('../tests/sample fonts/oblegg.otf');
+          if (!response.ok) {
+            throw new Error(`Failed to load default font: ${response.statusText}`);
+          }
+          return new Uint8Array(await response.arrayBuffer());
+        } catch (error) {
+          throw new Error(`Could not load default font: ${error.message}`);
+        }
+      }
+
+      async function compareTTXFiles(content1, content3) {
+        const lines1 = content1.split('\n').map(line => line.trim());
+        const lines3 = content3.split('\n').map(line => line.trim());
+
+        const maxLines = Math.max(lines1.length, lines3.length);
+        const differences = [];
+        let matchingLines = 0;
+
+        for (let i = 0; i < maxLines; i++) {
+          const line1 = lines1[i] || '';
+          const line3 = lines3[i] || '';
+
+          // Skip lines that contain timestamps or other dynamic content
+          const isDynamicLine = line => {
+            return (
+              line.includes('created=') ||
+              line.includes('modified=') ||
+              line.includes('checkSumAdjustment=') ||
+              line.includes('<!--') ||
+              line.startsWith('<?xml')
+            );
+          };
+
+          if (isDynamicLine(line1) || isDynamicLine(line3)) {
+            matchingLines++; // Consider dynamic lines as matching
+            continue;
+          }
+
+          if (line1 === line3) {
+            matchingLines++;
+          } else {
+            differences.push({
+              lineNumber: i + 1,
+              original: line1,
+              modified: line3,
+            });
+          }
+        }
+
+        const similarity = maxLines > 0 ? (matchingLines / maxLines) * 100 : 0;
+
+        return { similarity, differences };
+      }
+
+      window.runRoundTripTest = async function () {
+        try {
+          setStatus('Initializing TTX engine...', 'loading');
+          log('Starting TTX round-trip test...');
+
+          // Initialize TTX with custom pyodide path
+          const originalTTX = TTX;
+
+          // We need to modify the pyodide path before initialization
+          // Since TTX uses './pyodide/' by default, we need to work around this
+          log('Note: Using Pyodide from ../dist/pyodide/');
+
+          await TTX.initialize();
+          log('✓ TTX engine initialized');
+
+          // Get font data
+          let fontData;
+          const fileInput = document.getElementById('fontFile');
+
+          if (fileInput.files && fileInput.files[0]) {
+            log(`Using selected file: ${fileInput.files[0].name}`);
+            fontData = new Uint8Array(await fileInput.files[0].arrayBuffer());
+          } else {
+            log('Using default font: oblegg.otf');
+            fontData = await loadDefaultFont();
+          }
+
+          log(`Font loaded: ${fontData.length} bytes`);
+
+          // Step 1: Convert font to TTX
+          setStatus('Step 1: Converting font to TTX...', 'loading');
+          log('Step 1: Converting font to TTX...');
+
+          const ttxContent1 = await TTX.dumpToTTX(fontData, {
+            tables: [],
+            disassembleInstructions: true,
+          });
+
+          log(`✓ Generated TTX content (${Math.round(ttxContent1.length / 1024)} KB)`);
+
+          // Step 2: Convert TTX back to font
+          setStatus('Step 2: Converting TTX back to font...', 'loading');
+          log('Step 2: Converting TTX back to font...');
+
+          const fontData2 = await TTX.compileFromTTX(ttxContent1);
+          log(`✓ Generated font data (${Math.round(fontData2.byteLength / 1024)} KB)`);
+
+          // Step 3: Convert regenerated font back to TTX
+          setStatus('Step 3: Converting regenerated font to TTX...', 'loading');
+          log('Step 3: Converting regenerated font to TTX...');
+
+          const ttxContent3 = await TTX.dumpToTTX(new Uint8Array(fontData2), {
+            tables: [],
+            disassembleInstructions: true,
+          });
+
+          log(`✓ Generated second TTX content (${Math.round(ttxContent3.length / 1024)} KB)`);
+
+          // Step 4: Compare TTX files
+          setStatus('Step 4: Comparing TTX files...', 'loading');
+          log('Step 4: Comparing TTX files...');
+
+          const { similarity, differences } = await compareTTXFiles(ttxContent1, ttxContent3);
+
+          // Display results
+          setStatus(
+            `Round-trip test completed - ${similarity.toFixed(2)}% similarity`,
+            similarity > 95 ? 'success' : 'error'
+          );
+
+          log(`\n=== ROUND-TRIP TEST RESULTS ===`);
+          log(`Similarity: ${similarity.toFixed(2)}%`);
+
+          let resultHTML = `<h4>Similarity: ${similarity.toFixed(2)}%</h4>`;
+
+          if (differences.length > 0) {
+            log(`\nFirst 10 differences:`);
+            resultHTML += `<p><strong>Found ${differences.length} differences. First 10:</strong></p><ul>`;
+
+            differences.slice(0, 10).forEach((diff, index) => {
+              const logEntry = `${index + 1}. Line ${diff.lineNumber}:\n   Original: ${diff.original}\n   Modified: ${diff.modified}`;
+              log(logEntry);
+              resultHTML += `<li><strong>Line ${diff.lineNumber}:</strong><br>
+                                      <code>Original: ${escapeHtml(diff.original)}</code><br>
+                                      <code>Modified: ${escapeHtml(diff.modified)}</code></li>`;
+            });
+            resultHTML += '</ul>';
+          } else {
+            log('✓ TTX files are identical!');
+            resultHTML +=
+              '<p style="color: green;"><strong>✓ TTX files are identical!</strong></p>';
+          }
+
+          resultContentElement.innerHTML = resultHTML;
+          resultsElement.style.display = 'block';
+
+          log('\n✓ Round-trip test completed successfully');
+        } catch (error) {
+          setStatus(`Error: ${error.message}`, 'error');
+          log(`\n❌ Error: ${error.message}`);
+          console.error('Round-trip test error:', error);
+        }
+      };
+
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+    </script>
+  </body>
+</html>

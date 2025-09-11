@@ -1,0 +1,46 @@
+# Source files
+src/
+tests/
+docs/
+scripts/
+
+# Development files
+.vscode/
+.github/
+*.log
+.DS_Store
+Thumbs.db
+
+# Development configs
+jest.config.js
+tsconfig.json
+rollup.config.js
+.eslintrc.*
+.prettierrc.*
+
+# Test files and fixtures
+TEST_*
+**/sample*
+**/*.test.*
+**/*.spec.*
+
+# Build artifacts that shouldn't be published
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Development dependencies
+node_modules/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# IDE files
+*.swp
+*.swo
+*~
+
+# README variants (keep only README.md)
+README-*.md

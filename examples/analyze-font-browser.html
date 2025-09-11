@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TTX-WASM Browser Example</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        border-bottom: 2px solid #007acc;
+        padding-bottom: 10px;
+      }
+      .file-input {
+        margin: 20px 0;
+        padding: 20px;
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        text-align: center;
+      }
+      .file-input:hover {
+        border-color: #007acc;
+      }
+      button {
+        background: #007acc;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        margin: 10px 5px 10px 0;
+      }
+      button:hover {
+        background: #005a9e;
+      }
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .log {
+        background: #f8f8f8;
+        border: 1px solid #ddd;
+        padding: 15px;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        white-space: pre-wrap;
+        max-height: 400px;
+        overflow-y: auto;
+        margin: 20px 0;
+      }
+      .status {
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+      .status.loading {
+        background: #e3f2fd;
+        color: #1976d2;
+      }
+      .status.success {
+        background: #e8f5e8;
+        color: #2e7d32;
+      }
+      .status.error {
+        background: #ffebee;
+        color: #c62828;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🌐 TTX-WASM Browser Example</h1>
+      <p>
+        This example demonstrates TTX-WASM running in the browser with WebAssembly/Pyodide backend.
+      </p>
+
+      <div class="file-input">
+        <label for="fontFile">📁 Select a font file (.ttf, .otf, .woff, .woff2):</label><br /><br />
+        <input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2,.ttc" />
+      </div>
+
+      <button id="analyzeBtn" onclick="analyzeFont()">🔍 Analyze Font</button>
+      <button onclick="clearLog()">🧹 Clear Log</button>
+
+      <div id="status" class="status">Ready to analyze fonts</div>
+      <div class="log" id="log"></div>
+    </div>
+
+    <script type="module">
+      import { TTX } from '../dist/ttx-wasm.esm.js';
+
+      let logElement = document.getElementById('log');
+      let statusElement = document.getElementById('status');
+      let analyzeBtn = document.getElementById('analyzeBtn');
+
+      function log(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        logElement.textContent += `[${timestamp}] ${message}\n`;
+        logElement.scrollTop = logElement.scrollHeight;
+      }
+
+      function setStatus(message, type = 'loading') {
+        statusElement.textContent = message;
+        statusElement.className = `status ${type}`;
+      }
+
+      function clearLog() {
+        logElement.textContent = '';
+        setStatus('Ready to analyze fonts');
+      }
+
+      // Initialize TTX when page loads
+      (async () => {
+        try {
+          setStatus('Initializing TTX-WASM...', 'loading');
+          log('🚀 Initializing TTX-WASM with WebAssembly/Pyodide backend...');
+
+          await TTX.initialize();
+
+          log(`✅ TTX initialized successfully!`);
+          log(`🌍 Runtime: ${TTX.getRuntime()}`);
+          log(`⚙️  Config: ${JSON.stringify(TTX.getConfig(), null, 2)}`);
+
+          setStatus('Ready to analyze fonts', 'success');
+          analyzeBtn.disabled = false;
+        } catch (error) {
+          log(`❌ Failed to initialize TTX: ${error.message}`);
+          setStatus('Initialization failed', 'error');
+          analyzeBtn.disabled = true;
+        }
+      })();
+
+      window.clearLog = clearLog;
+
+      window.analyzeFont = async function () {
+        const fileInput = document.getElementById('fontFile');
+        const file = fileInput.files[0];
+
+        if (!file) {
+          alert('Please select a font file first!');
+          return;
+        }
+
+        try {
+          setStatus('Analyzing font...', 'loading');
+          analyzeBtn.disabled = true;
+
+          log(`\n📁 Analyzing file: ${file.name} (${Math.round(file.size / 1024)} KB)`);
+
+          // Read file
+          const fontData = new Uint8Array(await file.arrayBuffer());
+          log(`✅ File loaded: ${fontData.length} bytes`);
+
+          // Detect format
+          log('\n🔍 Detecting format...');
+          const format = await TTX.detectFormat(fontData);
+          log(`📄 Format: ${format}`);
+
+          // Get font info
+          log('\n📋 Getting font information...');
+          const info = await TTX.getFontInfo(fontData);
+          log(`📊 Tables: ${info.tables.length} found`);
+          log(
+            `   Tables: ${info.tables.slice(0, 10).join(', ')}${info.tables.length > 10 ? '...' : ''}`
+          );
+
+          if (info.metadata.family) {
+            log(`👨‍👩‍👧‍👦 Family: ${info.metadata.family}`);
+          }
+          if (info.metadata.style) {
+            log(`🎨 Style: ${info.metadata.style}`);
+          }
+          if (info.metadata.version) {
+            log(`📝 Version: ${info.metadata.version}`);
+          }
+          if (info.metadata.unitsPerEm) {
+            log(`📏 Units per Em: ${info.metadata.unitsPerEm}`);
+          }
+
+          // Validate font
+          log('\n🔍 Validating font...');
+          const validation = await TTX.validateFont(fontData);
+          log(
+            `${validation.isValid ? '✅' : '❌'} Validation: ${validation.isValid ? 'PASSED' : 'FAILED'}`
+          );
+
+          if (validation.errors.length > 0) {
+            log(`❌ Errors: ${validation.errors.length}`);
+            validation.errors.forEach(error => log(`   • ${error}`));
+          }
+
+          if (validation.warnings.length > 0) {
+            log(`⚠️  Warnings: ${validation.warnings.length}`);
+            validation.warnings.forEach(warning => log(`   • ${warning}`));
+          }
+
+          // Convert to TTX (limited tables for demo)
+          log('\n🔄 Converting to TTX (head and name tables only)...');
+          const ttxContent = await TTX.dumpToTTX(fontData, {
+            tables: ['head', 'name'],
+          });
+
+          log(`✅ Generated TTX: ${Math.round(ttxContent.length / 1024)} KB`);
+          log('\nFirst 15 lines of TTX:');
+          const lines = ttxContent.split('\n').slice(0, 15);
+          lines.forEach((line, i) => log(`${String(i + 1).padStart(3)}: ${line}`));
+
+          if (lines.length < ttxContent.split('\n').length) {
+            log('   ...');
+          }
+
+          // Perform round-trip test (limited for demo)
+          log('\n🔄 Performing round-trip test...');
+          const roundTrip = await TTX.roundTripTest(fontData, {
+            tables: ['head'], // Just head table for speed
+          });
+
+          log(
+            `${roundTrip.success ? '✅' : '❌'} Round-trip: ${roundTrip.success ? 'PASSED' : 'FAILED'}`
+          );
+          log(`📊 Similarity: ${roundTrip.similarity.toFixed(2)}%`);
+
+          if (roundTrip.differences.length > 0) {
+            log(`⚠️  Differences: ${roundTrip.differences.length}`);
+            roundTrip.differences.slice(0, 5).forEach(diff => {
+              log(`   Line ${diff.lineNumber}: "${diff.original}" → "${diff.modified}"`);
+            });
+          }
+
+          log('\n🎉 Font analysis complete!');
+          setStatus('Analysis complete', 'success');
+        } catch (error) {
+          log(`\n❌ Error: ${error.message}`);
+          setStatus('Analysis failed', 'error');
+          console.error('Font analysis error:', error);
+        } finally {
+          analyzeBtn.disabled = false;
+        }
+      };
+    </script>
+  </body>
+</html>

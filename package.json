@@ -1,11 +1,27 @@
 {
   "name": "ttx-wasm",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "type": "module",
-  "description": "A WebAssembly port of FontTools TTX for JavaScript environments",
+  "description": "A dual-runtime FontTools TTX library for browser (WebAssembly) and Node.js (native Python) environments",
   "main": "dist/ttx-wasm.cjs.js",
   "module": "dist/ttx-wasm.esm.js",
   "types": "types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/ttx-wasm.esm.js",
+      "require": "./dist/ttx-wasm.cjs.js",
+      "types": "./types/index.d.ts"
+    },
+    "./browser": {
+      "import": "./dist/ttx-wasm.esm.js",
+      "types": "./types/index.d.ts"
+    },
+    "./node": {
+      "import": "./dist/ttx-wasm-node.esm.js",
+      "require": "./dist/ttx-wasm-node.cjs.js",
+      "types": "./types/universal-ttx.d.ts"
+    }
+  },
   "files": [
     "dist/**/*",
     "types/**/*",
@@ -15,11 +31,15 @@
   "scripts": {
     "build": "npm run clean && npm run build:js",
     "build:js": "rollup -c && powershell -Command \"if (Test-Path 'dist/types') { if (!(Test-Path 'types')) { mkdir types } ; Copy-Item -Recurse 'dist/types/src/js/*' 'types/' -Force ; Remove-Item -Recurse 'dist/types' }\" && powershell -Command \"Copy-Item dist/ttx-wasm.esm.js demo/\" && powershell -Command \"Copy-Item -Recurse dist/pyodide demo/ -Force\"",
+    "build:dual": "npm run clean && rollup -c rollup-dual.config.js && npm run build:types && npm run build:demo",
+    "build:types": "powershell -Command \"if (Test-Path 'dist/types') { if (!(Test-Path 'types')) { mkdir types } ; Copy-Item -Recurse 'dist/types/src/js/*' 'types/' -Force ; Remove-Item -Recurse 'dist/types' }\"",
+    "build:demo": "powershell -Command \"Copy-Item dist/ttx-wasm.esm.js demo/\" && powershell -Command \"Copy-Item -Recurse dist/pyodide demo/ -Force\"",
     "build:dev": "npm run build:js",
     "test": "jest",
+    "test:node": "jest --testPathPattern=\"node|universal\" --testEnvironment=node",
+    "test:browser": "jest --testPathPattern=\"browser|pyodide\"",
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration",
-    "test:browser": "jest --testPathPattern=browser",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint src/**/*.{ts,js} --fix",
@@ -48,7 +68,11 @@
     "otf",
     "ttf",
     "font-conversion",
-    "xml"
+    "xml",
+    "nodejs",
+    "browser",
+    "universal",
+    "dual-runtime"
   ],
   "author": "Matt LaGrandeur <matt@lagrandeur.com>",
   "license": "MIT",
@@ -86,5 +110,13 @@
   "dependencies": {
     "iconv-lite": "^0.6.3",
     "pyodide": "^0.28.2"
+  },
+  "peerDependencies": {
+    "fonttools": "*"
+  },
+  "peerDependenciesMeta": {
+    "fonttools": {
+      "optional": true
+    }
   }
 }
