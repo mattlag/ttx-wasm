@@ -126,6 +126,8 @@ describe('Universal TTX Interface', () => {
 
     const result = await TTX.roundTripTest(fontData, {
       tables: ['head', 'name'], // Limit to essential tables for faster testing
+      recalcBBoxes: false, // Preserve original bounding boxes
+      recalcTimestamp: false, // Preserve original timestamps
     });
 
     expect(result).toHaveProperty('success');

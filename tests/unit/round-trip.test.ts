@@ -55,13 +55,17 @@ describe('Round-trip conversion test', () => {
 
     // Step 2: Convert TTX back to font (oblegg-2.otf)
     console.log('Step 2: Converting TTX back to font...');
-    const fontData2 = await TTX.compileFromTTX(ttxContent1);
+    const fontData2 = await TTX.compileFromTTX(ttxContent1, {
+      recalcBBoxes: false, // Preserve original bounding boxes
+      recalcTimestamp: false, // Preserve original timestamps
+    });
 
     const fontFile2 = path.join(scratchDir, 'oblegg-2.otf');
     fs.writeFileSync(fontFile2, Buffer.from(fontData2));
     console.log(
       `✓ Generated ${path.basename(fontFile2)} (${Math.round(fontData2.byteLength / 1024)} KB)`
     );
+    console.log('ℹ Using recalc=false options to preserve original font metrics');
 
     // Step 3: Convert the regenerated font back to TTX (oblegg-3.otf.ttx)
     console.log('Step 3: Converting regenerated font to TTX...');

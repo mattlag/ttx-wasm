@@ -1,5 +1,16 @@
 /**
- * TTX-WASM: FontTools TTX for WebAssembly
+ * export interface TTXOptions {
+  tables?: string[];
+  skipTables?: string[];
+  splitTables?: boolean;
+  splitGlyphs?: boolean;
+  disassembleInstructions?: boolean;
+  fontNumber?: number;
+  flavor?: string;
+  recalcBBoxes?: boolean;       // Control bounding box recalculation
+  recalcTimestamp?: boolean;    // Control timestamp recalculation
+  // Note: recalcMasterChecksum is not supported by FontTools TTFont.save()
+}ntTools TTX for WebAssembly
  * Now powered by Pyodide for 100% Python FontTools compatibility
  */
 import { pyodideTTX } from './pyodide-ttx';
@@ -11,6 +22,9 @@ export interface TTXOptions {
     disassembleInstructions?: boolean;
     fontNumber?: number;
     flavor?: string;
+    recalcBBoxes?: boolean;
+    recalcTimestamp?: boolean;
+    recalcMasterChecksum?: boolean;
 }
 export interface FontInfo {
     format: string;

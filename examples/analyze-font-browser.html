@@ -227,6 +227,8 @@
           log('\n🔄 Performing round-trip test...');
           const roundTrip = await TTX.roundTripTest(fontData, {
             tables: ['head'], // Just head table for speed
+            recalcBBoxes: false, // Preserve original bounding boxes
+            recalcTimestamp: false, // Preserve original timestamps
           });
 
           log(

@@ -137,6 +137,11 @@
 
       async function loadDefaultFont() {
         try {
+          // Check if there's an override function injected by the CLI test
+          if (window.loadFontOverride) {
+            return await window.loadFontOverride();
+          }
+
           const response = await fetch('../tests/sample fonts/oblegg.otf');
           if (!response.ok) {
             throw new Error(`Failed to load default font: ${response.statusText}`);
@@ -165,6 +170,7 @@
               line.includes('created=') ||
               line.includes('modified=') ||
               line.includes('checkSumAdjustment=') ||
+              line.includes('<checkSumAdjustment value=') ||
               line.includes('<!--') ||
               line.startsWith('<?xml')
             );
@@ -235,8 +241,12 @@
           setStatus('Step 2: Converting TTX back to font...', 'loading');
           log('Step 2: Converting TTX back to font...');
 
-          const fontData2 = await TTX.compileFromTTX(ttxContent1);
+          const fontData2 = await TTX.compileFromTTX(ttxContent1, {
+            recalcBBoxes: false, // Preserve original bounding boxes
+            recalcTimestamp: false, // Preserve original timestamps
+          });
           log(`✓ Generated font data (${Math.round(fontData2.byteLength / 1024)} KB)`);
+          log('ℹ Using recalc=false options to preserve original font metrics');
 
           // Step 3: Convert regenerated font back to TTX
           setStatus('Step 3: Converting regenerated font to TTX...', 'loading');

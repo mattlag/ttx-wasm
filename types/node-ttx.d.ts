@@ -1,5 +1,16 @@
 /**
- * Node.js backend for TTX functionality using native Python FontTools
+ * Nodeexport interface TTXOptions {
+  tables?: string[];
+  skipTables?: string[];
+  splitTables?: boolean;
+  splitGlyphs?: boolean;
+  disassembleInstructions?: boolean;
+  fontNumber?: number;
+  flavor?: string;
+  recalcBBoxes?: boolean;       // Control bounding box recalculation
+  recalcTimestamp?: boolean;    // Control timestamp recalculation
+  // Note: recalcMasterChecksum is not supported by FontTools TTFont.save()
+}for TTX functionality using native Python FontTools
  * Provides the same API as the browser version but uses subprocess calls
  */
 export interface TTXOptions {
@@ -10,6 +21,9 @@ export interface TTXOptions {
     disassembleInstructions?: boolean;
     fontNumber?: number;
     flavor?: string;
+    recalcBBoxes?: boolean;
+    recalcTimestamp?: boolean;
+    recalcMasterChecksum?: boolean;
 }
 export interface FontInfo {
     format: string;

@@ -1,5 +1,16 @@
 /**
- * Pyodide-based TTX implementation using Python FontTools
+ * export interface TTXOptions {
+  tables?: string[];
+  skipTables?: string[];
+  splitTables?: boolean;
+  splitGlyphs?: boolean;
+  disassembleInstructions?: boolean;
+  fontNumber?: number;
+  flavor?: string;
+  recalcBBoxes?: boolean;       // Control bounding box recalculation
+  recalcTimestamp?: boolean;    // Control timestamp recalculation
+  // Note: recalcMasterChecksum is not supported by FontTools TTFont.save()
+}d TTX implementation using Python FontTools
  * Provides 100% feature parity with Python FontTools TTX
  */
 export interface TTXOptions {
@@ -10,6 +21,9 @@ export interface TTXOptions {
     disassembleInstructions?: boolean;
     fontNumber?: number;
     flavor?: string;
+    recalcBBoxes?: boolean;
+    recalcTimestamp?: boolean;
+    recalcMasterChecksum?: boolean;
 }
 export interface FontInfo {
     format: string;

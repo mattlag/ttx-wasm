@@ -1,8 +1,19 @@
 /**
- * Universal TTX interface that works in both browser and Node.js environments
+ * Universal TTX intexport interface TTXOptions {
+  tables?: string[];
+  skipTables?: string[];
+  splitTables?: boolean;
+  splitGlyphs?: boolean;
+  disassembleInstructions?: boolean;
+  fontNumber?: number;
+  flavor?: string;
+  recalcBBoxes?: boolean;       // Control bounding box recalculation
+  recalcTimestamp?: boolean;    // Control timestamp recalculation
+  // Note: recalcMasterChecksum is not supported by FontTools TTFont.save()
+}works in both browser and Node.js environments
  * Automatically selects the appropriate backend based on runtime detection
  */
-import { type RuntimeEnvironment, type RuntimeConfig } from './runtime';
+import { type RuntimeConfig, type RuntimeEnvironment } from './runtime';
 export interface TTXOptions {
     tables?: string[];
     skipTables?: string[];
@@ -11,6 +22,9 @@ export interface TTXOptions {
     disassembleInstructions?: boolean;
     fontNumber?: number;
     flavor?: string;
+    recalcBBoxes?: boolean;
+    recalcTimestamp?: boolean;
+    recalcMasterChecksum?: boolean;
 }
 export interface FontInfo {
     format: string;

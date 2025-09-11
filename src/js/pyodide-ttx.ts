@@ -1,5 +1,16 @@
 /**
- * Pyodide-based TTX implementation using Python FontTools
+ * export interface TTXOptions {
+  tables?: string[];
+  skipTables?: string[];
+  splitTables?: boolean;
+  splitGlyphs?: boolean;
+  disassembleInstructions?: boolean;
+  fontNumber?: number;
+  flavor?: string;
+  recalcBBoxes?: boolean;       // Control bounding box recalculation
+  recalcTimestamp?: boolean;    // Control timestamp recalculation
+  // Note: recalcMasterChecksum is not supported by FontTools TTFont.save()
+}d TTX implementation using Python FontTools
  * Provides 100% feature parity with Python FontTools TTX
  */
 
@@ -13,6 +24,9 @@ export interface TTXOptions {
   disassembleInstructions?: boolean;
   fontNumber?: number;
   flavor?: string;
+  recalcBBoxes?: boolean; // Control bounding box recalculation
+  recalcTimestamp?: boolean; // Control timestamp recalculation
+  recalcMasterChecksum?: boolean; // Control checksum recalculation
 }
 
 export interface FontInfo {
@@ -186,13 +200,15 @@ export class PyodideTTX {
               except Exception as e:
                   raise Exception(f"Failed to dump to TTX: {e}")
           
-          def compile_from_ttx(self, ttx_content: str, flavor=None) -> bytes:
+          def compile_from_ttx(self, ttx_content: str, flavor=None, recalc_bboxes=True, recalc_timestamp=True) -> bytes:
               """
               Compile TTX XML back to font binary
               
               Args:
                   ttx_content: TTX XML content
                   flavor: Output flavor (woff, woff2, etc.)
+                  recalc_bboxes: Whether to recalculate bounding boxes
+                  recalc_timestamp: Whether to recalculate timestamps
               """
               try:
                   # Create temporary file for TTX content
@@ -204,10 +220,17 @@ export class PyodideTTX {
                   font = TTFont()
                   font.importXML(ttx_path)
                   
+                  # Control recalculation options
+                  # Note: These affect how FontTools handles derived metrics
+                  font.recalcBBoxes = recalc_bboxes
+                  font.recalcTimestamp = recalc_timestamp
+                  
                   # Save to binary format
                   output = io.BytesIO()
                   if flavor:
                       font.flavor = flavor
+                  
+                  # Save the font (checksums are handled automatically by FontTools)
                   font.save(output)
                   
                   font.close()
@@ -308,9 +331,16 @@ export class PyodideTTX {
 
     this.pyodide.globals.set('ttx_content', ttxContent);
     this.pyodide.globals.set('flavor', options.flavor || null);
+    this.pyodide.globals.set('recalc_bboxes', options.recalcBBoxes !== false); // Default true
+    this.pyodide.globals.set('recalc_timestamp', options.recalcTimestamp !== false); // Default true
 
     const result = this.pyodide.runPython(`
-      binary_data = ttx_processor.compile_from_ttx(ttx_content, flavor=flavor)
+      binary_data = ttx_processor.compile_from_ttx(
+          ttx_content, 
+          flavor=flavor,
+          recalc_bboxes=recalc_bboxes,
+          recalc_timestamp=recalc_timestamp
+      )
       binary_data
     `);
 

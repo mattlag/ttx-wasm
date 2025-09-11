@@ -64,6 +64,8 @@ export class FontAnalyzer {
       if (availableEssential.length > 0) {
         results.roundTrip = await TTX.roundTripTest(fontData, {
           tables: availableEssential,
+          recalcBBoxes: false, // Preserve original bounding boxes
+          recalcTimestamp: false, // Preserve original timestamps
         });
       }
 

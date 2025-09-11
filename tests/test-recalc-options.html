@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TTX Recalc Options Demo</title>
+    <style>
+      body {
+        font-family: monospace;
+        margin: 20px;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ccc;
+      }
+      .result {
+        background: #f5f5f5;
+        padding: 10px;
+        margin: 10px 0;
+      }
+      .success {
+        color: green;
+      }
+      .warning {
+        color: orange;
+      }
+      .error {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>TTX Recalc Options Demonstration</h1>
+    <p>This test shows how the new recalc options affect round-trip conversion.</p>
+
+    <div class="test-section">
+      <h2>Test 1: Default Behavior (with recalculation)</h2>
+      <div id="test1-result" class="result">Loading...</div>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 2: Preserve Original Metrics (disable recalculation)</h2>
+      <div id="test2-result" class="result">Loading...</div>
+    </div>
+
+    <div class="test-section">
+      <h2>Comparison</h2>
+      <div id="comparison-result" class="result">Loading...</div>
+    </div>
+
+    <script type="module">
+      import TTX from './dist/ttx-wasm.esm.js';
+
+      async function loadFont() {
+        const response = await fetch('./tests/sample fonts/oblegg.otf');
+        return new Uint8Array(await response.arrayBuffer());
+      }
+
+      async function compareMetrics(ttx1, ttx2) {
+        const differences = [];
+
+        // Extract key metrics for comparison
+        const extractMetric = (ttx, pattern) => {
+          const match = ttx.match(pattern);
+          return match ? match[1] : null;
+        };
+
+        const metrics = [
+          { name: 'xMin', pattern: /<xMin value="([^"]+)"/ },
+          { name: 'minRightSideBearing', pattern: /<minRightSideBearing value="([^"]+)"/ },
+          { name: 'xMaxExtent', pattern: /<xMaxExtent value="([^"]+)"/ },
+          { name: 'FontBBox', pattern: /<FontBBox value="([^"]+)"/ },
+        ];
+
+        metrics.forEach(metric => {
+          const val1 = extractMetric(ttx1, metric.pattern);
+          const val2 = extractMetric(ttx2, metric.pattern);
+          if (val1 !== val2) {
+            differences.push(`${metric.name}: "${val1}" → "${val2}"`);
+          }
+        });
+
+        return differences;
+      }
+
+      async function runTests() {
+        try {
+          console.log('Initializing TTX...');
+          await TTX.initialize();
+
+          console.log('Loading font...');
+          const fontData = await loadFont();
+
+          // Test 1: Default behavior (with recalculation)
+          console.log('Running Test 1: Default behavior...');
+          const ttx1 = await TTX.dumpToTTX(fontData);
+          const font1 = await TTX.compileFromTTX(ttx1, {
+            // Default: recalcBBoxes: true, recalcTimestamp: true, recalcMasterChecksum: true
+          });
+          const ttx1Round = await TTX.dumpToTTX(font1);
+
+          document.getElementById('test1-result').innerHTML =
+            '<div class="success">✓ Test 1 completed with default recalculation</div>';
+
+                // Test 2: Preserve original metrics
+                console.log('Running Test 2: Preserve original metrics...');
+                const font2 = await TTX.compileFromTTX(ttx1, {
+                    recalcBBoxes: false,
+                    recalcTimestamp: false
+                });
+                const ttx2Round = await TTX.dumpToTTX(font2);          document.getElementById('test2-result').innerHTML =
+            '<div class="success">✓ Test 2 completed with recalculation disabled</div>';
+
+          // Compare the results
+          console.log('Comparing results...');
+          const differences1 = compareMetrics(ttx1, ttx1Round);
+          const differences2 = compareMetrics(ttx1, ttx2Round);
+
+          let comparisonHtml = '<h3>Round-trip Differences:</h3>';
+
+          comparisonHtml += '<h4>With Recalculation (Default):</h4>';
+          if (differences1.length === 0) {
+            comparisonHtml += '<div class="success">✓ No differences found</div>';
+          } else {
+            comparisonHtml +=
+              '<div class="warning">⚠ ' + differences1.length + ' differences:</div>';
+            comparisonHtml +=
+              '<ul>' + differences1.map(d => '<li>' + d + '</li>').join('') + '</ul>';
+          }
+
+          comparisonHtml += '<h4>Without Recalculation:</h4>';
+          if (differences2.length === 0) {
+            comparisonHtml +=
+              '<div class="success">✓ No differences found - metrics preserved!</div>';
+          } else {
+            comparisonHtml +=
+              '<div class="warning">⚠ ' + differences2.length + ' differences:</div>';
+            comparisonHtml +=
+              '<ul>' + differences2.map(d => '<li>' + d + '</li>').join('') + '</ul>';
+          }
+
+          comparisonHtml += '<h4>Summary:</h4>';
+          if (differences2.length < differences1.length) {
+            comparisonHtml +=
+              '<div class="success">✓ Disabling recalculation preserved more original metrics!</div>';
+          } else {
+            comparisonHtml += '<div class="warning">ℹ Both approaches had similar results</div>';
+          }
+
+          document.getElementById('comparison-result').innerHTML = comparisonHtml;
+        } catch (error) {
+          console.error('Test failed:', error);
+          document.body.innerHTML +=
+            '<div class="error">❌ Test failed: ' + error.message + '</div>';
+        }
+      }
+
+      // Run tests when page loads
+      runTests();
+    </script>
+  </body>
+</html>

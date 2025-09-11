@@ -1,5 +1,16 @@
 /**
- * Node.js backend for TTX functionality using native Python FontTools
+ * Nodeexport interface TTXOptions {
+  tables?: string[];
+  skipTables?: string[];
+  splitTables?: boolean;
+  splitGlyphs?: boolean;
+  disassembleInstructions?: boolean;
+  fontNumber?: number;
+  flavor?: string;
+  recalcBBoxes?: boolean;       // Control bounding box recalculation
+  recalcTimestamp?: boolean;    // Control timestamp recalculation
+  // Note: recalcMasterChecksum is not supported by FontTools TTFont.save()
+}for TTX functionality using native Python FontTools
  * Provides the same API as the browser version but uses subprocess calls
  */
 
@@ -17,6 +28,9 @@ export interface TTXOptions {
   disassembleInstructions?: boolean;
   fontNumber?: number;
   flavor?: string;
+  recalcBBoxes?: boolean; // Control bounding box recalculation
+  recalcTimestamp?: boolean; // Control timestamp recalculation
+  recalcMasterChecksum?: boolean; // Control checksum recalculation
 }
 
 export interface FontInfo {
@@ -235,24 +249,58 @@ except Exception as e:
     try {
       await writeFile(ttxPath, ttxContent, 'utf-8');
 
-      // Build ttx compile command
-      const args = ['-o', fontPath];
+      // Use Python script for more control over compilation options
+      const pythonScript = `
+import sys
+import io
+from pathlib import Path
+from fontTools.ttLib import TTFont
 
-      if (options.flavor) {
-        args.push('--flavor', options.flavor);
-      }
+try:
+    ttx_path = sys.argv[1]
+    output_path = sys.argv[2]
+    flavor = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] != 'null' else None
+    recalc_bboxes = sys.argv[4] == 'true' if len(sys.argv) > 4 else True
+    recalc_timestamp = sys.argv[5] == 'true' if len(sys.argv) > 5 else True
+    
+    # Create font from TTX
+    font = TTFont()
+    font.importXML(ttx_path)
+    
+    # Control recalculation options
+    font.recalcBBoxes = recalc_bboxes
+    font.recalcTimestamp = recalc_timestamp
+    
+    # Set flavor if specified
+    if flavor:
+        font.flavor = flavor
+    
+    # Save the font (checksums are handled automatically by FontTools)
+    font.save(output_path)
+    font.close()
+    
+except Exception as e:
+    print(f"Error: {e}", file=sys.stderr)
+    sys.exit(1)
+`;
 
-      args.push(ttxPath);
+      // Write Python script to temporary file
+      const scriptPath = join(tempDir, 'compile_ttx.py');
+      await writeFile(scriptPath, pythonScript, 'utf-8');
 
-      // Execute ttx compile command
-      await execAsync(`${this.pythonExecutable} -m fontTools.ttx ${args.join(' ')}`);
+      // Execute Python script with options
+      const recalcBBoxes = options.recalcBBoxes !== false ? 'true' : 'false';
+      const recalcTimestamp = options.recalcTimestamp !== false ? 'true' : 'false';
 
-      // Read the generated font file
+      await execAsync(
+        `${this.pythonExecutable} "${scriptPath}" "${ttxPath}" "${fontPath}" "${options.flavor || 'null'}" ${recalcBBoxes} ${recalcTimestamp}`
+      ); // Read the generated font file
       const fontData = await readFile(fontPath);
       return new Uint8Array(fontData).buffer;
     } finally {
       await unlink(ttxPath).catch(() => {});
       await unlink(fontPath).catch(() => {});
+      await unlink(join(tempDir, 'compile_ttx.py')).catch(() => {});
     }
   }
 }
